@@ -18,11 +18,16 @@ export const IMAGES = {
     "https://sfile.chatglm.cn/images-ppt/ba321a546aac.jpg", // woman entrepreneur alt
   // Carousel scenario-specific photos
   womanSmartphoneSmile:
-    "https://sfile.chatglm.cn/images-ppt/fb0c7c1ffd23.jpg", // woman small business owner smartphone smiling
+    "https://sfile.chatglm.cn/images-ppt/fdd7ea4d2acc.jpg", // woman entrepreneur smiling with tablet in boutique
   deliveryDriver:
     "https://sfile.chatglm.cn/images-ppt/927079e06014.jpg", // courier delivery driver with package
   entrepreneurTablet:
     "https://sfile.chatglm.cn/images-ppt/9d45d2bfdfeb.jpg", // african business man using tablet
+  // YAA-branded uploads (from user) — used in carousel slides
+  yaaCouple: "/uploads/yaa-couple.png", // couple of YAA entrepreneurs with branded aprons
+  yaaManSuccess: "/uploads/yaa-man-success.png", // man smiling with smartphone, fist pump (WhatsApp success)
+  yaaWomanGreenSuit: "/uploads/yaa-woman-green-suit-clean.png", // woman in green suit with orange accents (premium entrepreneur)
+  yaaPaymentBadges: "/uploads/yaa-payment-badges-clean.png", // stack of 5 Mobile Money provider badges
 };
 
 // ---------- HERO CAROUSEL SLIDES ----------

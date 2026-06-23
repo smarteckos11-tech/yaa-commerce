@@ -56,12 +56,12 @@ export function Slide1Visual() {
         transition={{ duration: 1, ease: easeOut, delay: 0.3 }}
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
       >
-        <div className="relative w-[240px] sm:w-[300px] lg:w-[360px] aspect-[3/4] rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-premium ring-1 ring-white/60">
-          <img src={IMAGES.womanBoutique} alt="Entrepreneure africaine souriante dans sa boutique" className="w-full h-full object-cover" loading="eager" />
+        <div className="relative w-[240px] sm:w-[300px] lg:w-[360px] aspect-[3/4] rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-premium ring-1 ring-white/60 bg-white">
+          <img src={IMAGES.yaaCouple} alt="Couple d'entrepreneurs YAA avec tabliers de marque" className="w-full h-full object-cover" loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent" />
           <div className="absolute bottom-3 sm:bottom-4 left-3 right-3 sm:left-4 sm:right-4">
             <div className="glass-card rounded-xl px-3 py-1.5 inline-block">
-              <p className="text-[10px] font-medium text-slate-700">Amina · Yaoundé</p>
+              <p className="text-[10px] font-medium text-slate-700">Amina & Kofi · Abidjan</p>
               <p className="text-xs font-bold text-yaa-green">1M FCFA / an</p>
             </div>
           </div>
@@ -138,7 +138,7 @@ export function Slide1Visual() {
         </div>
       </motion.div>
 
-      {/* Satisfaction card — bottom right */}
+      {/* Payment providers card — bottom right (using user-provided payment badges image) */}
       <motion.div
         initial={{ opacity: 0, x: 30, y: 20 }}
         animate={{ opacity: 1, x: 0, y: 0 }}
@@ -146,17 +146,14 @@ export function Slide1Visual() {
         className="hidden sm:block absolute bottom-4 lg:bottom-10 right-0 lg:-right-4 z-20"
       >
         <div className="animate-float-slow">
-          <div className="glass-card rounded-2xl p-3.5 w-[180px]">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-amber-500 flex">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                ))}
-              </span>
-              <span className="text-xs font-bold text-slate-900">5.0</span>
-            </div>
-            <p className="text-xs font-semibold text-slate-700">Satisfaction marchands</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Basé sur 10 000+ avis</p>
+          <div className="glass-card rounded-2xl p-3 w-[170px]">
+            <p className="text-[10px] font-semibold text-slate-700 mb-1.5">Paiements acceptés</p>
+            <img
+              src={IMAGES.yaaPaymentBadges}
+              alt="Badges Wave, Orange Money, MTN MoMo, Moov Money, CinetPay"
+              className="w-full h-auto rounded-md"
+              loading="lazy"
+            />
           </div>
         </div>
       </motion.div>
@@ -218,13 +215,13 @@ export function Slide2Visual() {
         transition={{ duration: 1, ease: easeOut, delay: 0.3 }}
         className="absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-10"
       >
-        <div className="relative w-[200px] sm:w-[260px] lg:w-[300px] aspect-[3/4] rounded-[1.5rem] overflow-hidden shadow-premium ring-1 ring-white/60">
-          <img src={IMAGES.womanSmartphoneSmile} alt="Commerçante africaine souriante avec son smartphone" className="w-full h-full object-cover" loading="eager" />
+        <div className="relative w-[200px] sm:w-[260px] lg:w-[300px] aspect-[3/4] rounded-[1.5rem] overflow-hidden shadow-premium ring-1 ring-white/60 bg-white">
+          <img src={IMAGES.yaaManSuccess} alt="Entrepreneur souriant avec smartphone, geste de succès" className="w-full h-full object-cover" loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent" />
           <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4">
             <div className="glass-card rounded-xl px-3 py-1.5 inline-block">
-              <p className="text-[10px] font-medium text-slate-700">Mariama · Dakar</p>
-              <p className="text-xs font-bold text-[#25D366]">+300% sur WhatsApp</p>
+              <p className="text-[10px] font-medium text-slate-700">Koffi · Abidjan</p>
+              <p className="text-xs font-bold text-[#25D366]">+5 000 commandes WhatsApp</p>
             </div>
           </div>
         </div>
@@ -652,13 +649,13 @@ export function Slide4Visual() {
         transition={{ duration: 1, ease: easeOut, delay: 0.3 }}
         className="absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-10"
       >
-        <div className="relative w-[220px] sm:w-[260px] lg:w-[300px] aspect-[3/4] rounded-[1.5rem] overflow-hidden shadow-premium ring-1 ring-white/60">
-          <img src={IMAGES.entrepreneurTablet} alt="Entrepreneur africain avec tablette analytics" className="w-full h-full object-cover" loading="eager" />
+        <div className="relative w-[220px] sm:w-[260px] lg:w-[300px] aspect-[3/4] rounded-[1.5rem] overflow-hidden shadow-premium ring-1 ring-white/60 bg-white">
+          <img src={IMAGES.yaaWomanGreenSuit} alt="Entrepreneure africaine en costume vert avec tablette analytics" className="w-full h-full object-cover" loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent" />
           <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4">
             <div className="glass-card rounded-xl px-3 py-1.5 inline-block">
-              <p className="text-[10px] font-medium text-slate-700">Koffi · Abidjan</p>
-              <p className="text-xs font-bold text-yaa-green">+5 000 commandes IA</p>
+              <p className="text-[10px] font-medium text-slate-700">Amina · Yaoundé</p>
+              <p className="text-xs font-bold text-yaa-green">+47% croissance IA</p>
             </div>
           </div>
         </div>
