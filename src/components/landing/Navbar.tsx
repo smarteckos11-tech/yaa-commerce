@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ArrowRight, LogIn } from "lucide-react";
+import { Menu, X, ArrowRight, LogIn, LayoutDashboard } from "lucide-react";
 import { YaaLogo } from "./YaaLogo";
 import { NAV_LINKS } from "@/lib/landing-data";
 import { cn } from "@/lib/utils";
@@ -48,16 +48,17 @@ export function Navbar() {
             ))}
           </div>
 
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <a
               href="/admin"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-yaa-green transition-colors rounded-lg"
+              className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold text-slate-700 hover:text-yaa-green hover:bg-yaa-green-soft/50 transition-colors rounded-lg"
             >
-              Admin
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="hidden sm:inline">Admin</span>
             </a>
             <a
               href="#"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-800 hover:text-yaa-green transition-colors rounded-lg"
+              className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-800 hover:text-yaa-green transition-colors rounded-lg"
             >
               <LogIn className="w-4 h-4" />
               Se connecter
@@ -124,6 +125,14 @@ export function Navbar() {
                 ))}
               </div>
               <div className="mt-auto pt-6 border-t border-slate-200 flex flex-col gap-2">
+                <a
+                  href="/admin"
+                  onClick={() => setMobileOpen(false)}
+                  className="px-4 py-3 text-center text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg inline-flex items-center justify-center gap-2"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  Accéder au Dashboard Admin
+                </a>
                 <a
                   href="#"
                   className="px-4 py-3 text-center text-sm font-semibold text-slate-800 border border-slate-200 rounded-lg"
