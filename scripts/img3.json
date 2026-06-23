@@ -1,0 +1,32 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "African woman using smartphone in colorful boutique shop"
+✅ Got 3 images
+{
+  "success": true,
+  "query": "African woman using smartphone in colorful boutique shop",
+  "count": 3,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/c22625222b8f.jpg",
+      "caption": "",
+      "source": "EY",
+      "original_width": "2048px",
+      "original_height": "1365px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/9023f39ed5da.jpg",
+      "caption": "",
+      "source": "ny times",
+      "original_width": "2048px",
+      "original_height": "1024px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/3ac4a0bbb3e3.jpg",
+      "caption": "",
+      "source": "Vogue",
+      "original_width": "2560px",
+      "original_height": "1707px"
+    }
+  ]
+}

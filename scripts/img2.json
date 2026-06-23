@@ -1,0 +1,32 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "African woman entrepreneur smiling confident business owner"
+✅ Got 3 images
+{
+  "success": true,
+  "query": "African woman entrepreneur smiling confident business owner",
+  "count": 3,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/d6358c41e291.jpg",
+      "caption": "",
+      "source": "Shutterstock",
+      "original_width": "1500px",
+      "original_height": "1101px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/63e7dbe8b857.jpg",
+      "caption": "",
+      "source": "Alamy",
+      "original_width": "1300px",
+      "original_height": "766px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/ba321a546aac.jpg",
+      "caption": "",
+      "source": "DepositPhotos",
+      "original_width": "1600px",
+      "original_height": "1168px"
+    }
+  ]
+}

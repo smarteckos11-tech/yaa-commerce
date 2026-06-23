@@ -1,0 +1,32 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "African entrepreneur man smiling portrait professional"
+✅ Got 3 images
+{
+  "success": true,
+  "query": "African entrepreneur man smiling portrait professional",
+  "count": 3,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/d50b6bfddcc2.jpg",
+      "caption": "",
+      "source": "Dreamstime.com",
+      "original_width": "1067px",
+      "original_height": "1690px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/367e17328004.jpg",
+      "caption": "",
+      "source": "Alamy",
+      "original_width": "1300px",
+      "original_height": "959px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/c439c83a0ac6.jpg",
+      "caption": "",
+      "source": "Sayah Institute",
+      "original_width": "960px",
+      "original_height": "960px"
+    }
+  ]
+}

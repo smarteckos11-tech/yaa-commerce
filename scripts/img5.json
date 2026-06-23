@@ -1,0 +1,32 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "happy african customer receiving package delivery"
+✅ Got 3 images
+{
+  "success": true,
+  "query": "happy african customer receiving package delivery",
+  "count": 3,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/aaecca6e6619.jpg",
+      "caption": "",
+      "source": "Alamy",
+      "original_width": "1300px",
+      "original_height": "956px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/67a6e2ca9142.jpg",
+      "caption": "",
+      "source": "Nanit",
+      "original_width": "2048px",
+      "original_height": "2048px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/a9ffaa5e2f2a.jpg",
+      "caption": "",
+      "source": "GQ",
+      "original_width": "2207px",
+      "original_height": "1241px"
+    }
+  ]
+}
