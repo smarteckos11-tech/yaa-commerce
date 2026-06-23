@@ -16,7 +16,112 @@ export const IMAGES = {
     "https://sfile.chatglm.cn/images-ppt/aaecca6e6619.jpg", // customer receiving package
   womanAlt:
     "https://sfile.chatglm.cn/images-ppt/ba321a546aac.jpg", // woman entrepreneur alt
+  // Carousel scenario-specific photos
+  womanSmartphoneSmile:
+    "https://sfile.chatglm.cn/images-ppt/fb0c7c1ffd23.jpg", // woman small business owner smartphone smiling
+  deliveryDriver:
+    "https://sfile.chatglm.cn/images-ppt/927079e06014.jpg", // courier delivery driver with package
+  entrepreneurTablet:
+    "https://sfile.chatglm.cn/images-ppt/9d45d2bfdfeb.jpg", // african business man using tablet
 };
+
+// ---------- HERO CAROUSEL SLIDES ----------
+export type Slide = {
+  id: string;
+  badge: string;
+  // Title pieces — for color highlighting
+  titleLines: { text: string; highlight?: "orange" | "green" }[];
+  subtitle: string;
+  primaryCta: { label: string; href: string };
+  secondaryCta: { label: string; href: string };
+  trustPoints: string[];
+};
+
+export const SLIDES: Slide[] = [
+  {
+    id: "ambitions",
+    badge: "Déjà plus de 10 000 marchands conquis en Afrique",
+    titleLines: [
+      { text: "L'Afrique avance," },
+      { text: "vos ", },
+      { text: "ambitions", highlight: "orange" },
+      { text: " prennent vie avec " },
+      { text: "YAA", highlight: "green" },
+      { text: "." },
+    ],
+    subtitle:
+      "De la première vente à l'expansion internationale, YAA accompagne chaque étape de votre réussite. Boutique en ligne, paiements Mobile Money, livraison, WhatsApp Business — tout, réunifié dans une seule plateforme premium.",
+    primaryCta: { label: "Créer ma boutique gratuitement", href: "#tarifs" },
+    secondaryCta: { label: "Voir une démo", href: "#dashboard" },
+    trustPoints: [
+      "0 FCFA pour démarrer",
+      "Sans engagement",
+      "Configuration en 5 minutes",
+    ],
+  },
+  {
+    id: "whatsapp",
+    badge: "WhatsApp Business intégré nativement",
+    titleLines: [
+      { text: "Transformez chaque " },
+      { text: "conversation", highlight: "green" },
+      { text: " " },
+      { text: "WhatsApp", highlight: "orange" },
+      { text: " en vente." },
+    ],
+    subtitle:
+      "Catalogue partagé, commandes automatiques, paiements Mobile Money en un clic. Vos clients commandent en deux messages, vous encaissez instantanément. Le commerce devient aussi simple qu'une discussion.",
+    primaryCta: { label: "Connecter mon WhatsApp", href: "#tarifs" },
+    secondaryCta: { label: "Voir un exemple", href: "#fonctionnalites" },
+    trustPoints: [
+      "Réponses automatiques",
+      "Catalogue synchronisé",
+      "Paiement dans le chat",
+    ],
+  },
+  {
+    id: "livraison",
+    badge: "Réseau logistique intégré dans 15+ pays",
+    titleLines: [
+      { text: "De " },
+      { text: "Dakar", highlight: "orange" },
+      { text: " à " },
+      { text: "Lagos", highlight: "green" },
+      { text: ", vos colis livrés en " },
+      { text: "24h", highlight: "orange" },
+      { text: "." },
+    ],
+    subtitle:
+      "Yango, DHL, transporteurs locaux — YAA choisit le meilleur itinéraire, calcule les frais, imprime les étiquettes et suit chaque colis en temps réel. Vos clients savent toujours où est leur commande.",
+    primaryCta: { label: "Démarrer la livraison", href: "#tarifs" },
+    secondaryCta: { label: "Voir les pays couverts", href: "#fonctionnalites" },
+    trustPoints: [
+      "Suivi temps réel",
+      "Frais calculés auto",
+      "Livraison express disponible",
+    ],
+  },
+  {
+    id: "ia",
+    badge: "IA générative intégrée à votre tableau de bord",
+    titleLines: [
+      { text: "Pilotez votre " },
+      { text: "croissance", highlight: "green" },
+      { text: " avec " },
+      { text: "l'IA YAA", highlight: "orange" },
+      { text: "." },
+    ],
+    subtitle:
+      "Descriptions produits, posts réseaux sociaux, scripts WhatsApp, prévisions de ventes. L'IA YAA génère votre contenu marketing et anticipe vos ruptures de stock. Décidez avec des données, pas avec des intuitions.",
+    primaryCta: { label: "Activer l'IA YAA", href: "#tarifs" },
+    secondaryCta: { label: "Voir le dashboard", href: "#dashboard" },
+    trustPoints: [
+      "Descriptions auto générées",
+      "Prévisions de ventes",
+      "Alertes de stock intelligentes",
+    ],
+  },
+];
 
 export type Testimonial = {
   name: string;

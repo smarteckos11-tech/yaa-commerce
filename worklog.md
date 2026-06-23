@@ -65,3 +65,50 @@ Stage Summary:
 - Responsive mobile-first validé
 - Aucune erreur lint ou runtime
 - Serveur dev opérationnel sur port 3000
+
+---
+Task ID: carousel-v2
+Agent: Super Z (main)
+Task: Transformer le Hero en carrousel premium avec 4 slides distincts (scénarios différents), chacun aussi impressionnant que le premier.
+
+Work Log:
+- Recherche 3 photos additionnelles via z-ai image-search :
+  - womanSmartphoneSmile (fb0c7c1ffd23.jpg) — femme commerçante au smartphone
+  - deliveryDriver (927079e06014.jpg) — livreur avec colis
+  - entrepreneurTablet (9d45d2bfdfeb.jpg) — entrepreneur avec tablette
+- Ajout d'un type Slide + tableau SLIDES[4] dans landing-data.ts avec titres/sous-titres/CTAs/trust points pour chaque scénario :
+  1. "L'Afrique avance, vos ambitions prennent vie avec YAA" (ambitions)
+  2. "Transformez chaque conversation WhatsApp en vente" (whatsapp)
+  3. "De Dakar à Lagos, vos colis livrés en 24h" (livraison)
+  4. "Pilotez votre croissance avec l'IA YAA" (ia)
+- Création de SlideVisuals.tsx avec 4 composants visuels premium :
+  - Slide1Visual : femme entrepreneure + carte Afrique + 4 cartes glassmorphism (ventes, paiement, commande WhatsApp, satisfaction) + 6 icônes flottantes
+  - Slide2Visual : femme au smartphone + mockup téléphone WhatsApp complet (header, messages, product card, order confirmation, input bar) + cartes paiement Orange Money et réponse auto IA
+  - Slide3Visual : livreur + carte Afrique avec routes animées (5 routes + camions animés moving dot) + carte tracking timeline (4 étapes) + carte pays couverts (15 drapeaux) + carte témoignage livraison 18h
+  - Slide4Visual : entrepreneur avec tablette + mini dashboard IA "YAA Intelligence" (KPIs, area chart avec prévision, suggestions IA) + carte insight IA + carte croissance prédite +47% + carte description générée
+- Réécriture de Hero.tsx en carrousel complet :
+  - État: activeIndex, isPaused, progress (0-1)
+  - Auto-rotation toutes les 7 secondes avec barre de progression animée
+  - Pause au survol (onMouseEnter/Leave)
+  - Navigation: flèches prev/next, bouton pause/play, 4 indicateurs cliquables avec progress bar
+  - Compteur "01/04" en haut à droite du visuel
+  - AnimatePresence pour transitions fluides (texte et visuel changent ensemble)
+  - Clavier: flèches gauche/droite pour naviguer
+  - Section "Paiements acceptés" visible uniquement sur le slide 1 (AnimatePresence height auto)
+  - Render titre avec highlights orange (souligné) et vert (gradient)
+- Correction erreur lint: supprimé useEffect setProgress(0) redondant (les fonctions goTo/goNext/goPrev reset déjà progress)
+- Vérifications Agent Browser:
+  - 0 erreur runtime, console clean
+  - Slides changent automatiquement toutes les 7s
+  - Clic sur indicateurs change le slide instantanément
+  - Pause au survol fonctionne
+  - Titre/subtitle/CTAs changent correctement par slide
+  - Captures desktop + mobile validées
+  - Responsive mobile: visuels adaptés, navigation par flèches accessible
+
+Stage Summary:
+- Hero transformé en carrousel premium 4 slides
+- Chaque slide a son propre scénario + titre + sous-titre + CTAs + visuel composé unique
+- Animations: auto-rotate, progress bar, pause on hover, keyboard nav, AnimatePresence transitions
+- Visuels premium: photos réelles + mockups (téléphone WhatsApp, dashboard IA) + cartes glassmorphism + icônes flottantes + particules
+- ESLint clean, 0 erreur runtime, responsive validé

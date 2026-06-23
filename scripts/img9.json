@@ -1,0 +1,32 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "african courier delivery driver holding package city street"
+✅ Got 3 images
+{
+  "success": true,
+  "query": "african courier delivery driver holding package city street",
+  "count": 3,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/e91c2cbf3120.png",
+      "caption": "",
+      "source": "The New Yorker",
+      "original_width": "3332px",
+      "original_height": "4998px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/927079e06014.jpg",
+      "caption": "",
+      "source": "WIRED",
+      "original_width": "2400px",
+      "original_height": "1600px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/f86c155c3ee3.jpg",
+      "caption": "",
+      "source": "Reuters",
+      "original_width": "1920px",
+      "original_height": "1280px"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "african business man using tablet dashboard analytics"
+✅ Got 3 images
+{
+  "success": true,
+  "query": "african business man using tablet dashboard analytics",
+  "count": 3,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/586f433cdeb5.jpg",
+      "caption": "",
+      "source": "tapitag.co",
+      "original_width": "2000px",
+      "original_height": "1000px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/9d45d2bfdfeb.jpg",
+      "caption": "",
+      "source": "news.acer.com",
+      "original_width": "2048px",
+      "original_height": "1365px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/6604811e023a.png",
+      "caption": "",
+      "source": "PR Newswire",
+      "original_width": "1280px",
+      "original_height": "797px"
+    }
+  ]
+}
