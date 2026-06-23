@@ -1,0 +1,32 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "Yango delivery ride hailing logo png"
+✅ Got 3 images
+{
+  "success": true,
+  "query": "Yango delivery ride hailing logo png",
+  "count": 3,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/17e389072844.jpg",
+      "caption": "",
+      "source": "yango.com",
+      "original_width": "1800px",
+      "original_height": "945px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/4a4b29fb6d4b.png",
+      "caption": "",
+      "source": "Nepali Patro",
+      "original_width": "1280px",
+      "original_height": "720px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/665a657ddf49.jpg",
+      "caption": "",
+      "source": "DXB Apps",
+      "original_width": "1400px",
+      "original_height": "1000px"
+    }
+  ]
+}

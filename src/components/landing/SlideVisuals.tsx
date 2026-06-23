@@ -16,10 +16,15 @@ import {
   Send,
   Bot,
   ArrowUpRight,
-  ShoppingCart,
+  ShoppingBag,
+  UtensilsCrossed,
+  Footprints,
+  Smartphone,
+  Plug,
 } from "lucide-react";
 import { AfricaMap } from "./AfricaMap";
 import { Particles } from "./Particles";
+import { VendorBoutiqueCard, CoteDIvoireMap } from "./ProductsShowcase";
 import { IMAGES } from "@/lib/landing-data";
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
@@ -121,32 +126,15 @@ export function Slide1Visual() {
         </div>
       </motion.div>
 
-      {/* WhatsApp order card — bottom left */}
+      {/* Vendor boutique showcase card — bottom left (replaces WhatsApp order card) */}
       <motion.div
         initial={{ opacity: 0, x: -30, y: 20 }}
         animate={{ opacity: 1, x: 0, y: 0 }}
         transition={{ duration: 0.8, ease: easeOut, delay: 1.0 }}
-        className="hidden sm:block absolute bottom-8 lg:bottom-16 left-0 lg:-left-6 z-20"
+        className="hidden sm:block absolute bottom-6 lg:bottom-12 left-0 lg:-left-6 z-20"
       >
         <div className="animate-float-fast">
-          <div className="glass-card rounded-2xl p-3.5 w-[220px]">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-[#25D366] flex items-center justify-center">
-                <MessageCircle className="w-4 h-4 text-white" />
-              </div>
-              <p className="text-xs font-semibold text-slate-900">Nouvelle commande WhatsApp</p>
-            </div>
-            <div className="flex items-center gap-2.5 p-2 bg-slate-50 rounded-lg">
-              <div className="w-9 h-9 rounded-md bg-gradient-to-br from-amber-100 to-orange-200 flex items-center justify-center">
-                <Store className="w-4 h-4 text-yaa-orange" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-slate-900 truncate">Sac en cuir Premium</p>
-                <p className="text-[10px] text-slate-500">x1 · Livraison Yango</p>
-              </div>
-              <p className="text-xs font-bold text-slate-900">25K</p>
-            </div>
-          </div>
+          <VendorBoutiqueCard />
         </div>
       </motion.div>
 
@@ -262,14 +250,16 @@ export function Slide2Visual() {
         className="absolute top-2 sm:top-6 right-0 sm:right-2 z-20"
       >
         <div className="animate-float-slow">
-          <div className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-3.5 w-[170px] sm:w-[200px]">
+          <div className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-3.5 w-[180px] sm:w-[210px]">
             <div className="flex items-center gap-2 sm:gap-2.5">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-yaa-orange" />
-              </div>
+              <img
+                src="/brands/orange-money.svg"
+                alt="Logo Orange Money"
+                className="h-8 w-auto"
+              />
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] sm:text-xs font-semibold text-slate-900">Paiement Orange Money</p>
-                <p className="text-[9px] sm:text-[10px] text-slate-500">Reçu · 1 min</p>
+                <p className="text-[11px] sm:text-xs font-semibold text-slate-900">Paiement reçu</p>
+                <p className="text-[9px] sm:text-[10px] text-slate-500">Orange Money · 1 min</p>
               </div>
               <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yaa-green flex-shrink-0" />
             </div>
@@ -280,25 +270,55 @@ export function Slide2Visual() {
         </div>
       </motion.div>
 
-      {/* Auto-reply indicator — bottom left */}
+      {/* WhatsApp product catalog showcase — bottom left */}
       <motion.div
         initial={{ opacity: 0, x: -30, y: 20 }}
         animate={{ opacity: 1, x: 0, y: 0 }}
         transition={{ duration: 0.8, ease: easeOut, delay: 1.1 }}
-        className="hidden sm:block absolute bottom-6 lg:bottom-10 left-2 lg:left-4 z-20"
+        className="hidden sm:block absolute bottom-4 lg:bottom-8 left-2 lg:left-4 z-20"
       >
         <div className="animate-float-fast">
-          <div className="glass-card rounded-2xl p-3.5 w-[210px]">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className="w-7 h-7 rounded-lg bg-yaa-green flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
+          <div className="glass-card rounded-2xl p-3.5 w-[230px]">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-md bg-[#25D366] flex items-center justify-center">
+                  <MessageCircle className="w-3.5 h-3.5 text-white" />
+                </div>
+                <p className="text-xs font-semibold text-slate-900">Catalogue WhatsApp</p>
               </div>
-              <p className="text-xs font-semibold text-slate-900">Réponse auto IA</p>
-              <span className="ml-auto text-[10px] text-slate-400">0.3s</span>
+              <span className="text-[9px] text-[#25D366] font-bold bg-[#25D366]/10 px-1.5 py-0.5 rounded">12 produits</span>
             </div>
-            <p className="text-[11px] text-slate-600 leading-snug">
-              « Bonjour ! Votre commande est confirmée. Paiement de 45 000 FCFA reçu via Orange Money. Livraison Yango demain avant 12h. »
-            </p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { emoji: "👜", label: "Sacs" },
+                { emoji: "👟", label: "Chauss" },
+                { emoji: "📱", label: "Tél" },
+                { emoji: "💄", label: "Cosm" },
+                { emoji: "🍲", label: "Food" },
+                { emoji: "🔌", label: "Élec" },
+                { emoji: "👗", label: "Mode" },
+                { emoji: "⌚", label: "Montres" },
+              ].map((p, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 1.3 + i * 0.05 }}
+                  className="aspect-square rounded-md bg-slate-50 border border-slate-100 flex flex-col items-center justify-center hover:border-yaa-green/30 hover:bg-white transition-colors"
+                >
+                  <span className="text-base">{p.emoji}</span>
+                  <span className="text-[7px] text-slate-600 font-medium mt-0.5">{p.label}</span>
+                </motion.div>
+              ))}
+            </div>
+            <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[9px] text-slate-500">Paiement intégré</span>
+              <div className="flex items-center gap-0.5">
+                <img src="/brands/wave.png" alt="Wave" className="h-3 w-auto" />
+                <img src="/brands/orange-money.svg" alt="Orange Money" className="h-3 w-auto" />
+                <img src="/brands/mtn.png" alt="MTN MoMo" className="h-3 w-auto" />
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -393,20 +413,20 @@ function WhatsAppPhoneMockup() {
 }
 
 /* ============================================================
-   SLIDE 3 — "De Dakar à Lagos, livrés en 24h"
-   delivery man + tracking card + map with routes
+   SLIDE 3 — "De Abidjan à Korhogo, livrés en 24h"
+   delivery man + tracking card + Côte d'Ivoire map with routes
    ============================================================ */
 export function Slide3Visual() {
   return (
     <div className="relative h-[460px] sm:h-[560px] lg:h-[640px] w-full">
-      {/* Africa map background (smaller, right) */}
+      {/* Côte d'Ivoire map background (right) */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.2, ease: easeOut, delay: 0.2 }}
-        className="absolute right-0 top-0 w-[60%] h-full flex items-center justify-center opacity-50"
+        className="absolute right-0 top-1/2 -translate-y-1/2 w-[65%] h-[90%] flex items-center justify-center opacity-90"
       >
-        <DeliveryRoutesMap className="w-full h-full" />
+        <CoteDIvoireMap className="w-full h-full" />
       </motion.div>
 
       <Particles count={20} className="absolute inset-0 pointer-events-none hidden sm:block" color="#F7931A" />
@@ -422,13 +442,14 @@ export function Slide3Visual() {
         className="absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-10"
       >
         <div className="relative w-[220px] sm:w-[270px] lg:w-[310px] aspect-[3/4] rounded-[1.5rem] overflow-hidden shadow-premium ring-1 ring-white/60">
-          <img src={IMAGES.deliveryDriver} alt="Livreur professionnel avec colis" className="w-full h-full object-cover" loading="eager" />
+          <img src={IMAGES.deliveryDriver} alt="Livreur Yango avec colis à Abidjan" className="w-full h-full object-cover" loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent" />
-          <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4">
+          <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 flex items-center gap-2">
             <div className="glass-card rounded-xl px-3 py-1.5 inline-block">
-              <p className="text-[10px] font-medium text-slate-700">Kwame · Accra</p>
-              <p className="text-xs font-bold text-yaa-orange">Yango Partner</p>
+              <p className="text-[10px] font-medium text-slate-700">Ibrahim · Abidjan</p>
+              <p className="text-xs font-bold text-yaa-orange">Yango Delivery</p>
             </div>
+            <img src="/brands/yango.png" alt="Yango" className="h-7 w-auto rounded-md bg-white/90 p-0.5" />
           </div>
         </div>
       </motion.div>
@@ -448,49 +469,61 @@ export function Slide3Visual() {
               </div>
               <div className="flex-1">
                 <p className="text-xs font-semibold text-slate-900">Colis #YA-2841</p>
-                <p className="text-[10px] text-slate-500">En cours de livraison</p>
+                <p className="text-[10px] text-slate-500">Abidjan → Bouaké</p>
               </div>
             </div>
             {/* Timeline */}
             <div className="space-y-1.5 mb-2">
               <TimelineStep label="Commande reçue" done time="14:32" />
-              <TimelineStep label="Pris en charge" done time="14:45" />
-              <TimelineStep label="En route" active time="15:02" />
-              <TimelineStep label="Livré" pending time="~15:30" />
+              <TimelineStep label="Pris en charge par Yango" done time="14:45" />
+              <TimelineStep label="En route vers Bouaké" active time="15:02" />
+              <TimelineStep label="Livré" pending time="~22:30" />
             </div>
             <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
               <span className="text-[10px] text-slate-500">Arrivée estimée</span>
-              <span className="text-xs font-bold text-yaa-green">28 min</span>
+              <span className="text-xs font-bold text-yaa-green">8h</span>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Countries covered card — bottom right */}
+      {/* Cities covered card — bottom right */}
       <motion.div
         initial={{ opacity: 0, x: 30, y: 20 }}
         animate={{ opacity: 1, x: 0, y: 0 }}
         transition={{ duration: 0.8, ease: easeOut, delay: 0.9 }}
-        className="hidden sm:block absolute bottom-8 lg:bottom-12 right-0 sm:-right-4 z-20"
+        className="hidden sm:block absolute bottom-6 lg:bottom-10 right-0 sm:-right-4 z-20"
       >
         <div className="animate-float-medium">
-          <div className="glass-card rounded-2xl p-3.5 w-[200px]">
+          <div className="glass-card rounded-2xl p-3.5 w-[210px]">
             <div className="flex items-center gap-2 mb-2">
               <MapPin className="w-4 h-4 text-yaa-green" />
-              <p className="text-xs font-semibold text-slate-900">Pays couverts</p>
+              <p className="text-xs font-semibold text-slate-900">Villes desservies</p>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {["🇸🇳", "🇨🇮", "🇬🇭", "🇳🇬", "🇨🇲", "🇰🇪", "🇨🇩", "🇲🇱", "🇧🇫", "🇹🇬", "🇧🇯", "🇬🇦", "🇨🇬", "🇲🇬", "🇿🇦"].map((flag, i) => (
-                <span key={i} className="text-base">{flag}</span>
+            <div className="space-y-1">
+              {[
+                { city: "Abidjan", time: "2h", hub: true },
+                { city: "Yamoussoukro", time: "6h", hub: true },
+                { city: "Bouaké", time: "8h", hub: true },
+                { city: "San-Pédro", time: "12h", hub: true },
+                { city: "Daloa", time: "10h", hub: false },
+                { city: "Korhogo", time: "18h", hub: false },
+                { city: "Man", time: "14h", hub: false },
+              ].map((c, i) => (
+                <div key={i} className="flex items-center justify-between text-[10px]">
+                  <span className={`${c.hub ? "font-semibold text-slate-900" : "text-slate-600"}`}>
+                    {c.hub && <span className="text-yaa-orange mr-1">●</span>}
+                    {c.city}
+                  </span>
+                  <span className="font-bold text-yaa-green">{c.time}</span>
+                </div>
               ))}
-              <span className="text-xs font-bold text-yaa-green self-center">+1</span>
             </div>
-            <p className="text-[10px] text-slate-500 mt-1.5">15+ pays · 24h en moyenne</p>
           </div>
         </div>
       </motion.div>
 
-      {/* Delivery confirmation card — bottom left */}
+      {/* Delivery partners card — bottom left */}
       <motion.div
         initial={{ opacity: 0, x: -30, y: 20 }}
         animate={{ opacity: 1, x: 0, y: 0 }}
@@ -499,17 +532,35 @@ export function Slide3Visual() {
       >
         <div className="animate-float-fast">
           <div className="glass-card rounded-2xl p-3.5 w-[200px]">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className="w-8 h-8 rounded-full bg-yaa-green-soft flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4 text-yaa-green" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-900">Livré en 18h</p>
-                <p className="text-[10px] text-slate-500">Dakar → Abidjan</p>
-              </div>
+            <div className="flex items-center gap-2 mb-2">
+              <Truck className="w-4 h-4 text-yaa-green" />
+              <p className="text-xs font-semibold text-slate-900">Partenaires livraison</p>
             </div>
-            <div className="text-[10px] text-slate-600 leading-snug">
-              « Livraison ultra rapide ! Mon client a reçu son colis avant prévu. » — Fatu S.
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-1.5 bg-white rounded-md border border-slate-100">
+                <img src="/brands/yango.png" alt="Yango" className="h-5 w-auto" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-slate-900">Yango</p>
+                  <p className="text-[8px] text-slate-500">Express Abidjan</p>
+                </div>
+                <span className="text-[9px] font-bold text-yaa-green bg-yaa-green-soft px-1.5 py-0.5 rounded">2h</span>
+              </div>
+              <div className="flex items-center gap-2 p-1.5 bg-white rounded-md border border-slate-100">
+                <img src="/brands/dhl.svg" alt="DHL" className="h-5 w-auto" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-slate-900">DHL</p>
+                  <p className="text-[8px] text-slate-500">International</p>
+                </div>
+                <span className="text-[9px] font-bold text-yaa-orange bg-yaa-orange-soft px-1.5 py-0.5 rounded">24h</span>
+              </div>
+              <div className="flex items-center gap-2 p-1.5 bg-white rounded-md border border-slate-100">
+                <div className="w-5 h-5 rounded-md bg-yaa-green flex items-center justify-center text-white text-[9px] font-bold">CI</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-slate-900">Coursiers locaux</p>
+                  <p className="text-[8px] text-slate-500">Intérieur du pays</p>
+                </div>
+                <span className="text-[9px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">18h</span>
+              </div>
             </div>
           </div>
         </div>
@@ -517,8 +568,8 @@ export function Slide3Visual() {
 
       {/* Floating brand icons */}
       <FloatingIcon className="hidden lg:block absolute top-1/3 right-1/4 z-30" delay={1.3} duration={4.5}>
-        <div className="w-11 h-11 rounded-xl bg-red-500 flex items-center justify-center shadow-glow-orange">
-          <span className="font-bold text-white text-sm">Y</span>
+        <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-premium border border-slate-100">
+          <img src="/brands/yango.png" alt="Yango" className="h-7 w-auto" />
         </div>
       </FloatingIcon>
       <FloatingIcon className="hidden lg:block absolute top-1/2 left-1/3 z-30" delay={1.6} duration={5}>
@@ -560,25 +611,7 @@ function TimelineStep({
 }
 
 function DeliveryRoutesMap({ className }: { className?: string }) {
-  // Map of Africa with routes from Dakar to other cities
-  const routes = [
-    { from: { x: 80, y: 110 }, to: { x: 175, y: 185 }, color: "#F7931A" }, // Dakar → Accra
-    { from: { x: 80, y: 110 }, to: { x: 215, y: 200 }, color: "#0F8A4B" }, // Dakar → Lagos
-    { from: { x: 175, y: 185 }, to: { x: 250, y: 215 }, color: "#F7931A" }, // Accra → Yaoundé
-    { from: { x: 215, y: 200 }, to: { x: 250, y: 270 }, color: "#0F8A4B" }, // Lagos → Kinshasa
-    { from: { x: 250, y: 215 }, to: { x: 330, y: 250 }, color: "#F7931A" }, // Yaoundé → Nairobi
-  ];
-  const cities = [
-    { name: "Dakar", x: 80, y: 110, hub: true },
-    { name: "Abidjan", x: 140, y: 175, hub: false },
-    { name: "Accra", x: 175, y: 185, hub: true },
-    { name: "Lagos", x: 215, y: 200, hub: true },
-    { name: "Yaoundé", x: 250, y: 215, hub: false },
-    { name: "Kinshasa", x: 250, y: 270, hub: false },
-    { name: "Nairobi", x: 330, y: 250, hub: true },
-    { name: "Johannesburg", x: 290, y: 360, hub: false },
-  ];
-
+  // Legacy Africa map — kept as fallback (unused by Slide 3, which now uses CoteDIvoireMap)
   return (
     <svg viewBox="0 0 460 460" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -587,7 +620,6 @@ function DeliveryRoutesMap({ className }: { className?: string }) {
           <stop offset="1" stopColor="#F7931A" stopOpacity="0.1" />
         </linearGradient>
       </defs>
-      {/* Stylized Africa silhouette */}
       <path
         d="M170 50 C 200 45, 230 50, 260 55 L 305 60 C 320 60, 330 70, 332 85 L 340 110 C 348 130, 350 145, 345 165 L 348 180 C 360 195, 365 210, 360 230 L 350 250 C 348 270, 345 285, 340 300 L 335 320 C 330 340, 325 355, 315 370 L 300 385 C 285 395, 270 395, 260 385 L 245 370 C 235 360, 230 365, 230 380 L 235 395 C 240 405, 240 415, 230 415 L 215 410 C 205 405, 200 395, 200 380 L 195 360 C 190 340, 185 320, 180 305 L 170 285 C 165 270, 165 255, 170 240 L 175 225 C 170 215, 165 205, 160 195 L 150 175 C 140 165, 135 155, 140 145 L 145 130 C 150 115, 155 100, 165 85 L 170 65 Z"
         fill="url(#route-grad)"
@@ -595,61 +627,6 @@ function DeliveryRoutesMap({ className }: { className?: string }) {
         strokeWidth="1.2"
         strokeOpacity="0.4"
       />
-
-      {/* Animated routes */}
-      {routes.map((r, i) => (
-        <g key={i}>
-          <line
-            x1={r.from.x}
-            y1={r.from.y}
-            x2={r.to.x}
-            y2={r.to.y}
-            stroke={r.color}
-            strokeWidth="1.5"
-            strokeDasharray="4 3"
-            strokeOpacity="0.6"
-          />
-          {/* Moving truck dot */}
-          <motion.circle
-            r="3"
-            fill={r.color}
-            initial={{ cx: r.from.x, cy: r.from.y }}
-            animate={{ cx: [r.from.x, r.to.x], cy: [r.from.y, r.to.y] }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              delay: i * 0.5,
-              ease: "easeInOut",
-            }}
-          />
-        </g>
-      ))}
-
-      {/* City markers */}
-      {cities.map((city) => (
-        <g key={city.name}>
-          {city.hub && (
-            <motion.circle
-              cx={city.x}
-              cy={city.y}
-              r="8"
-              fill="none"
-              stroke="#F7931A"
-              strokeWidth="1.2"
-              animate={{ scale: [0.8, 2, 2], opacity: [0.7, 0, 0] }}
-              transition={{ duration: 2.4, repeat: Infinity, delay: Math.random() * 2 }}
-              style={{ transformOrigin: `${city.x}px ${city.y}px` }}
-            />
-          )}
-          <circle cx={city.x} cy={city.y} r={city.hub ? 4 : 2.5} fill={city.hub ? "#F7931A" : "#0F8A4B"} />
-          <circle cx={city.x} cy={city.y} r="1.2" fill="white" />
-          {city.hub && (
-            <text x={city.x + 8} y={city.y + 3} fill="#0F172A" fontSize="9" fontWeight="bold" opacity="0.7">
-              {city.name}
-            </text>
-          )}
-        </g>
-      ))}
     </svg>
   );
 }

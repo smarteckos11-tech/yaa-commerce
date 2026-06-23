@@ -1,0 +1,46 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "orange money OM logo vector"
+✅ Got 5 images
+{
+  "success": true,
+  "query": "orange money OM logo vector",
+  "count": 5,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/aae6789361fc.jpg",
+      "caption": "",
+      "source": "Adobe Stock",
+      "original_width": "1000px",
+      "original_height": "1000px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/754cbe4c82ac.jpg",
+      "caption": "",
+      "source": "123RF",
+      "original_width": "1300px",
+      "original_height": "1300px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/1d9ac559383e.jpg",
+      "caption": "",
+      "source": "Unsplash",
+      "original_width": "3000px",
+      "original_height": "2400px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/f118ef773393.jpg",
+      "caption": "",
+      "source": "Alamy",
+      "original_width": "1300px",
+      "original_height": "1390px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/77021bc7912d.jpg",
+      "caption": "",
+      "source": "Alamy",
+      "original_width": "1300px",
+      "original_height": "1390px"
+    }
+  ]
+}

@@ -81,24 +81,24 @@ export const SLIDES: Slide[] = [
   },
   {
     id: "livraison",
-    badge: "Réseau logistique intégré dans 15+ pays",
+    badge: "Livraison intégrée dans toute la Côte d'Ivoire",
     titleLines: [
       { text: "De " },
-      { text: "Dakar", highlight: "orange" },
+      { text: "Abidjan", highlight: "orange" },
       { text: " à " },
-      { text: "Lagos", highlight: "green" },
+      { text: "Korhogo", highlight: "green" },
       { text: ", vos colis livrés en " },
       { text: "24h", highlight: "orange" },
       { text: "." },
     ],
     subtitle:
-      "Yango, DHL, transporteurs locaux — YAA choisit le meilleur itinéraire, calcule les frais, imprime les étiquettes et suit chaque colis en temps réel. Vos clients savent toujours où est leur commande.",
+      "Yango pour les livraisons express à Abidjan, DHL pour l'international, coursiers locaux pour l'intérieur du pays — Bouaké, Yamoussoukro, San-Pédro, Daloa, Man. YAA choisit le meilleur itinéraire, calcule les frais et suit chaque colis en temps réel.",
     primaryCta: { label: "Démarrer la livraison", href: "#tarifs" },
-    secondaryCta: { label: "Voir les pays couverts", href: "#fonctionnalites" },
+    secondaryCta: { label: "Voir les villes couvertes", href: "#fonctionnalites" },
     trustPoints: [
+      "Yango express à Abidjan",
+      "Intérieur du pays couvert",
       "Suivi temps réel",
-      "Frais calculés auto",
-      "Livraison express disponible",
     ],
   },
   {
@@ -367,4 +367,124 @@ export const NAV_LINKS = [
   { label: "Témoignages", href: "#temoignages" },
   { label: "Dashboard", href: "#dashboard" },
   { label: "Contact", href: "#contact" },
+];
+
+// ---------- BRAND LOGOS (official files in /public/brands) ----------
+export type BrandLogo = {
+  name: string;
+  src: string; // path under /public
+  type: "mobile-money" | "delivery" | "messaging";
+  /** Background fill for the logo chip — "white" works for most */
+  bg: "white" | "dark";
+};
+
+export const BRAND_LOGOS: BrandLogo[] = [
+  { name: "Wave", src: "/brands/wave.png", type: "mobile-money", bg: "white" },
+  { name: "Orange Money", src: "/brands/orange-money.svg", type: "mobile-money", bg: "white" },
+  { name: "MTN Mobile Money", src: "/brands/mtn.png", type: "mobile-money", bg: "white" },
+  { name: "Moov Money", src: "/brands/moov.png", type: "mobile-money", bg: "white" },
+  { name: "CinetPay", src: "/brands/cinetpay.svg", type: "mobile-money", bg: "white" },
+  { name: "WhatsApp Business", src: "/brands/whatsapp.svg", type: "messaging", bg: "white" },
+  { name: "Yango", src: "/brands/yango.png", type: "delivery", bg: "white" },
+  { name: "DHL", src: "/brands/dhl.svg", type: "delivery", bg: "white" },
+];
+
+// ---------- PRODUCT CATEGORIES (vendor showcase) ----------
+export type ProductCategory = {
+  id: string;
+  label: string;
+  icon: string; // lucide icon name
+  /** Emoji fallback used inside the visual chip */
+  emoji: string;
+  /** Brand-tinted gradient for the chip */
+  gradient: string;
+  /** Sample price */
+  samplePrice: string;
+  /** Vendor type */
+  vendor: string;
+};
+
+export const PRODUCT_CATEGORIES: ProductCategory[] = [
+  {
+    id: "sacs",
+    label: "Sacs à main",
+    icon: "ShoppingBag",
+    emoji: "👜",
+    gradient: "from-amber-200 to-orange-300",
+    samplePrice: "25 000 FCFA",
+    vendor: "Fatu Couture",
+  },
+  {
+    id: "chaussures",
+    label: "Chaussures",
+    icon: "Footprints",
+    emoji: "👟",
+    gradient: "from-sky-200 to-blue-300",
+    samplePrice: "32 000 FCFA",
+    vendor: "Brahima Shoes",
+  },
+  {
+    id: "electromenager",
+    label: "Électroménager",
+    icon: "Plug",
+    emoji: "🔌",
+    gradient: "from-slate-200 to-slate-300",
+    samplePrice: "85 000 FCFA",
+    vendor: "Koffi Electronics",
+  },
+  {
+    id: "telephones",
+    label: "Téléphones",
+    icon: "Smartphone",
+    emoji: "📱",
+    gradient: "from-purple-200 to-pink-300",
+    samplePrice: "120 000 FCFA",
+    vendor: "Tech Store CI",
+  },
+  {
+    id: "cosmetiques",
+    label: "Cosmétiques",
+    icon: "Sparkles",
+    emoji: "💄",
+    gradient: "from-pink-200 to-rose-300",
+    samplePrice: "8 500 FCFA",
+    vendor: "Amina Beauty",
+  },
+  {
+    id: "restauration",
+    label: "Restauration",
+    icon: "UtensilsCrossed",
+    emoji: "🍲",
+    gradient: "from-orange-200 to-red-300",
+    samplePrice: "3 500 FCFA",
+    vendor: "Chez Mariam",
+  },
+];
+
+// ---------- DELIVERY CITIES (Côte d'Ivoire focus) ----------
+export type DeliveryCity = {
+  name: string;
+  region: string;
+  /** 0-100 coordinates on the stylized Côte d'Ivoire map */
+  x: number;
+  y: number;
+  hub: boolean; // major hub
+  deliveryTime: string;
+};
+
+export const DELIVERY_CITIES: DeliveryCity[] = [
+  { name: "Abidjan", region: "Sud", x: 38, y: 78, hub: true, deliveryTime: "2h" },
+  { name: "Yamoussoukro", region: "Centre", x: 42, y: 58, hub: true, deliveryTime: "6h" },
+  { name: "Bouaké", region: "Centre", x: 48, y: 42, hub: true, deliveryTime: "8h" },
+  { name: "San-Pédro", region: "Sud-Ouest", x: 18, y: 75, hub: true, deliveryTime: "12h" },
+  { name: "Daloa", region: "Centre-Ouest", x: 22, y: 55, hub: false, deliveryTime: "10h" },
+  { name: "Korhogo", region: "Nord", x: 52, y: 18, hub: false, deliveryTime: "18h" },
+  { name: "Man", region: "Ouest", x: 12, y: 42, hub: false, deliveryTime: "14h" },
+  { name: "Gagnoa", region: "Sud-Ouest", x: 28, y: 65, hub: false, deliveryTime: "10h" },
+];
+
+export const DELIVERY_PARTNERS = [
+  { name: "Yango", src: "/brands/yango.png", color: "#E11D48", focus: "Livraison express Abidjan" },
+  { name: "DHL", src: "/brands/dhl.svg", color: "#D40511", focus: "International & grands colis" },
+  { name: "Coursiers locaux", src: null, color: "#0F8A4B", focus: "Intérieur du pays" },
 ];

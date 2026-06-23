@@ -1,0 +1,32 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "CinetPay payment gateway logo"
+✅ Got 3 images
+{
+  "success": true,
+  "query": "CinetPay payment gateway logo",
+  "count": 3,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/71b8a216d7d0.jpg",
+      "caption": "",
+      "source": "YouTube",
+      "original_width": "1280px",
+      "original_height": "720px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/17b4ceb1f50a.png",
+      "caption": "",
+      "source": "Medium",
+      "original_width": "1306px",
+      "original_height": "904px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/d2d84af38b40.png",
+      "caption": "",
+      "source": "Eden Stylz",
+      "original_width": "4455px",
+      "original_height": "1933px"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "Orange Money logo brand identity transparent png"
+✅ Got 5 images
+{
+  "success": true,
+  "query": "Orange Money logo brand identity transparent png",
+  "count": 5,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/a5961a37948a.png",
+      "caption": "",
+      "source": "WooCommerce",
+      "original_width": "1528px",
+      "original_height": "992px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/ead42a600ced.jpg",
+      "caption": "",
+      "source": "Dezeen",
+      "original_width": "2364px",
+      "original_height": "1330px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/01266e544459.jpg",
+      "caption": "",
+      "source": "LinkedIn",
+      "original_width": "1280px",
+      "original_height": "719px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/6676b3c68fa1.jpg",
+      "caption": "",
+      "source": "www.talkwalker.com",
+      "original_width": "1142px",
+      "original_height": "933px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/ab7960c6c889.png",
+      "caption": "",
+      "source": "My Yoga Teacher",
+      "original_width": "1536px",
+      "original_height": "1024px"
+    }
+  ]
+}

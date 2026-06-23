@@ -2,13 +2,13 @@
 
 import { motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
-import { PARTNERS } from "@/lib/landing-data";
+import { BRAND_LOGOS } from "@/lib/landing-data";
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
 
 export function Partners() {
   // Duplicate for marquee
-  const doubled = [...PARTNERS, ...PARTNERS];
+  const doubled = [...BRAND_LOGOS, ...BRAND_LOGOS];
 
   return (
     <section className="relative py-14 lg:py-16 border-y border-slate-100 bg-white">
@@ -45,35 +45,21 @@ export function Partners() {
 function PartnerLogo({
   partner,
 }: {
-  partner: { name: string; type: string };
+  partner: { name: string; src: string; type: string };
 }) {
   return (
-    <div className="flex-shrink-0 h-14 px-6 rounded-xl bg-white border border-slate-100 shadow-soft flex items-center justify-center gap-2.5 min-w-[180px]">
-      <PartnerMark name={partner.name} />
-      <span className="font-display font-bold text-base text-slate-800 whitespace-nowrap">
-        {partner.name}
-      </span>
-    </div>
-  );
-}
-
-function PartnerMark({ name }: { name: string }) {
-  // Brand-colored mark for each partner
-  const map: Record<string, { bg: string; text: string; symbol: string }> = {
-    Wave: { bg: "bg-sky-500", text: "text-white", symbol: "W" },
-    "Orange Money": { bg: "bg-orange-500", text: "text-white", symbol: "O" },
-    "MTN Mobile Money": { bg: "bg-yellow-400", text: "text-slate-900", symbol: "M" },
-    "Moov Money": { bg: "bg-blue-600", text: "text-white", symbol: "M" },
-    CinetPay: { bg: "bg-purple-600", text: "text-white", symbol: "C" },
-    "WhatsApp Business": { bg: "bg-[#25D366]", text: "text-white", symbol: "Wa" },
-    Yango: { bg: "bg-red-500", text: "text-white", symbol: "Y" },
-  };
-  const c = map[name] ?? { bg: "bg-slate-700", text: "text-white", symbol: "?" };
-  return (
-    <div
-      className={`w-9 h-9 rounded-lg ${c.bg} ${c.text} flex items-center justify-center font-extrabold text-sm`}
-    >
-      {c.symbol}
+    <div className="flex-shrink-0 h-16 px-5 rounded-xl bg-white border border-slate-100 shadow-soft flex items-center justify-center gap-2.5 min-w-[180px] hover:border-yaa-green/30 hover:shadow-premium transition-all">
+      {/* Logo image — constrained, contain to preserve aspect ratio */}
+      <img
+        src={partner.src}
+        alt={`Logo officiel ${partner.name}`}
+        className="h-9 w-auto object-contain"
+        loading="lazy"
+        onError={(e) => {
+          // Hide on error, fallback handled by parent layout
+          (e.currentTarget as HTMLImageElement).style.display = "none";
+        }}
+      />
     </div>
   );
 }

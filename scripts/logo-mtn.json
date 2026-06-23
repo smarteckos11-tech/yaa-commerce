@@ -1,0 +1,32 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "MTN Mobile Money MoMo official logo"
+✅ Got 3 images
+{
+  "success": true,
+  "query": "MTN Mobile Money MoMo official logo",
+  "count": 3,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/45e5d940db52.png",
+      "caption": "",
+      "source": "Logotypes 101",
+      "original_width": "1024px",
+      "original_height": "1024px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/32160b9e5ee0.jpg",
+      "caption": "",
+      "source": "Daily Maverick",
+      "original_width": "2000px",
+      "original_height": "1000px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/61eaa1acde92.jpg",
+      "caption": "",
+      "source": "x.com",
+      "original_width": "959px",
+      "original_height": "1200px"
+    }
+  ]
+}

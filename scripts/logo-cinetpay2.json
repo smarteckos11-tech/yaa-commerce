@@ -1,0 +1,46 @@
+🚀 Initializing Z-AI SDK...
+🔎 Searching images: "CinetPay logo payment aggregator Africa"
+✅ Got 5 images
+{
+  "success": true,
+  "query": "CinetPay logo payment aggregator Africa",
+  "count": 5,
+  "ranked": false,
+  "results": [
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/d6e771022f91.jpg",
+      "caption": "",
+      "source": "Afridigest - Substack",
+      "original_width": "1722px",
+      "original_height": "861px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/82416324672b.jpg",
+      "caption": "",
+      "source": "Medium",
+      "original_width": "1600px",
+      "original_height": "900px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/26d30294063c.jpg",
+      "caption": "",
+      "source": "LinkedIn",
+      "original_width": "800px",
+      "original_height": "1000px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/ef37373a9fdf.jpg",
+      "caption": "",
+      "source": "GitHub",
+      "original_width": "1280px",
+      "original_height": "640px"
+    },
+    {
+      "original_url": "https://sfile.chatglm.cn/images-ppt/4e8edc8c1157.jpg",
+      "caption": "",
+      "source": "LinkedIn Uganda",
+      "original_width": "2101px",
+      "original_height": "689px"
+    }
+  ]
+}
