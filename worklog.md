@@ -163,3 +163,74 @@ Stage Summary:
 - Marquee Partners utilise maintenant les vrais logos
 - Cartes paiement dans slides utilisent les vrais logos (Orange Money, Wave, MTN)
 - 0 erreur, lint clean, responsive validé
+
+---
+Task ID: admin-dashboard-v4
+Agent: Super Z (main)
+Task: Construire un Dashboard Admin complet pour YAA avec 13 pages fonctionnelles, données mock réalistes, design premium, et interactions complètes.
+
+Work Log:
+- Configuration thème admin dans globals.css:
+  - Ajout palette YAA complète: yaa-green 50-900 (#0F8A5F pour 500), yaa-orange 50-900 (#F97316), yaa-gray 50-900
+  - Ajout variables dark mode pour admin (background #0B1220, card #111827, etc.)
+- Création ThemeProvider (next-themes) avec attribute="class", defaultTheme="system"
+- Création ThemeToggle (bouton sun/moon avec mounted state pour éviter hydration mismatch)
+- Update root layout.tsx: wrappé avec ThemeProvider
+- Création fichier admin-data.ts massif (~700 lignes) avec toutes les données mock:
+  - NAV_GROUPS (4 groupes, 13 items de navigation avec icônes Lucide)
+  - Dashboard: DASHBOARD_STATS (4 cards), RECENT_ORDERS (5 commandes)
+  - Produits: PRODUCTS (10), PRODUCT_STATS, PRODUCT_CATEGORIES (7), CATEGORY_COLORS
+  - Commandes: KANBAN_COLUMNS (5 statuts, 14 commandes), ORDER_SUMMARY, PAYMENT_COLORS, ORDER_STATUS_COLORS
+  - Clients: CUSTOMERS (10), CUSTOMER_STATS, SEGMENT_COLORS
+  - Paiements: PROVIDERS (9), PAYMENT_STATS, TRANSACTIONS (10)
+  - WhatsApp: WHATSAPP_STATS, WHATSAPP_CONVERSATIONS (5), CHAT_MESSAGES (4 avec suggestion IA), WHATSAPP_CATALOG (6), AUTO_REPLIES (6), WHATSAPP_CAMPAIGNS (3)
+  - Livraisons: DELIVERY_STATS, SHIPMENTS (6), CARRIERS (4), DELIVERY_CITIES_LIST (12)
+  - Marketing: MARKETING_CHANNELS (4), MARKETING_CAMPAIGNS (6), MARKETING_SEGMENTS (6), AUTOMATIONS (5)
+  - YaaMind: YAAMIND_MODELS (4), YAAMIND_QUICK_ACTIONS (6), YAAMIND_CHAT (5 messages avec markdown bold + suggestions IA)
+  - Analytics: ANALYTICS_PREDICTIONS (5), REVENUE_CHART_DATA (12 mois réel+prédit), CONVERSION_FUNNEL (5), TRAFFIC_SOURCES (5), TOP_CITIES (6)
+  - MCP: MCP_CONNECTORS (8), MCP_STATS
+  - Marketplace: MARKETPLACE_CATEGORIES (6), FEATURED_EXTENSIONS (4), ALL_EXTENSIONS (8)
+  - Super Admin: SUPER_ADMIN_STATS (5), SUPER_ADMIN_USERS (8), SUPER_ADMIN_PLANS (3), SUPER_ADMIN_ROLES (5), NOTIFICATIONS (5)
+  - Helpers: formatFCFA, formatNumber
+- Création composants admin:
+  - DynamicIcon: charge dynamiquement n'importe quelle icône Lucide par nom
+  - AdminSidebar: collapsible (w-260px ↔ w-68px), 4 groupes nav, header logo Y + "YAA Admin" + "Commerce Intelligence", footer avatar "MD" Moussa Diallo Business Plan, bouton collapse flottant
+  - AdminTopbar: h-14 sticky, search bar, ThemeToggle, dropdown notifications (5 notifs, 3 non lues avec badges colorés par type), dropdown avatar
+  - ui-bits: StatCard (couleurs custom green/orange/blue/purple/red/rose/sky/yellow/emerald/amber), PageHeader (title/subtitle/actions), getLoyaltyColor
+  - admin/layout.tsx: sidebar desktop + drawer mobile + topbar + main content p-4/6
+- Construction 13 pages admin:
+  1. /admin — Dashboard: 4 StatCards + tableau 5 commandes récentes avec badges statut
+  2. /admin/produits — Produits: 4 stats, search + select catégorie + bouton IA, 4 tabs (Tous/Physiques/Numériques/Stock faible), tableau 10 produits avec emoji+SKU, badges catégorie colorés, type, prix FCFA, stock (⚠️ ≤10, ∞ digital), vendus, dropdown actions (Voir/Modifier/Dupliquer/IA image/IA SEO/Supprimer)
+  3. /admin/commandes — Kanban: 5 summary cards (Nouveau/En prép/Expédié/Livré/Annulé), search, 5 colonnes Kanban responsive avec cartes commande (avatar, client, ville/pays, items line-clamp-2, montant + badge paiement coloré, ID mono + heure, hover boutons Détails + WhatsApp), bordure gauche colorée par statut, max-height 65vh scroll
+  4. /admin/clients — Clients: 4 stats, search + select segment + select pays, tableau 10 clients avec avatar+nom+dernière commande, ville/pays, email+WhatsApp, dépenses totales, commandes, fidélité Progress bar colorée (vert/orange/ambre/rouge selon score), segment badge (VIP👑/Régulier/Actif/Nouveau), dropdown actions
+  5. /admin/paiements — Paiements: 4 stats, 2 tabs (Fournisseurs/Transactions), Fournisseurs = grid 3-col 9 cartes (barre colorée haut, logo carré couleur fournisseur, nom + badge connecté, type, pays globe, stats solde+transactions ou "Non configuré", bouton Configurer/Connecter), Transactions = search + tableau 10 lignes (ID mono, client, fournisseur chip coloré, montant, référence mono, statut avec icône, date)
+  6. /admin/whatsapp — WhatsApp Commerce: badge Connecté (point vert pulse), 4 stats, 4 tabs (Conversations/Catalogue/Auto/Campagnes), Conversations = chat split-panel h-500px (panel gauche w-80 liste 5 conversations avec avatar cercle + online dot + unread badge + VIP crown, panel droit header chat + messages bulles vert YAA/muted + suggestion IA bordure orange + input bar avec bouton IA sparkles + envoi vert), Catalogue = grid 6 produits emoji, Auto = 6 cartes Bot avec trigger code, Campagnes = 3 cartes avec stats
+  7. /admin/livraisons — Livraisons: 4 stats, 3 tabs (Expéditions/Transporteurs/Calculateur), Expéditions = tableau 6 lignes avec trajet MapPin+ArrowRight, Transporteurs = grid 2-col 4 cartes avec logo+stats, Calculateur = formulaire 3 selects (origine/destination/poids 12 villes ouest-africaines) + bouton Calculer orange → 3 cartes résultats animées (Yango moins cher bordure verte, DHL, FedEx) avec prix+délai+badge
+  8. /admin/marketing — Marketing: 4 cards canal (Email/SMS/WhatsApp/Push) avec envoyés/ouverts + barre progression taux, 3 tabs (Campagnes/Segments IA/Automatisations), Campagnes = grid 6 cartes avec icône canal + 4 stats, Segments = grid 6 cartes emoji + 3 stats + bouton Cibler, Automatisations = 5 cartes Zap avec trigger code + exécutions + statut
+  9. /admin/yaamind — YaaMind IA Chat: select modèle (GPT-4o/Claude 3.5/Gemini Pro/DeepSeek V3) avec icône Sparkles, 6 cartes quick actions (grid 3-col) avec couleurs différentes, interface chat h-500px avec bulles user (vert YAA rounded-br-md text-white) + assistant (muted rounded-bl-md) avec parsing **markdown bold**, suggestions IA encadré bordure orange, barre input avec boutons Copier/Refresh + bouton envoi orange, fonctionnalité copier avec état "copié" temporaire
+  10. /admin/analytics — Analytics Recharts: sélecteur Juin 2026 + Exporter, carte Prédictions IA gradient orange/green avec 5 prédictions (CA/Commandes/Clients/Conversion/Panier) + valeur + tendance ArrowUp/Down + % confiance badge, AreaChart Revenus (Réel vert plein vs Prédit orange pointillé strokeDasharray 8 4) 12 mois, BarChart horizontal Entonnoir conversion 5 étapes colorées, PieChart donut Sources trafic (5 sources) avec légende, Top villes 6 barres progression animées (motion.div width gradient vert)
+  11. /admin/mcp — MCP Connecteurs: 3 stats, grid 4-col 8 cartes connecteur (Gmail/Calendar/Notion/Slack/Discord/WordPress/Airtable/Drive) avec logo couleur, badge connecté/déconnecté, nom, catégorie, description, dernière sync, bouton Configurer/Connecter
+  12. /admin/marketplace — Marketplace: badge X installées + Développer extension, 6 cards catégorie cliquables (Paiements/Marketing/Livraison/CRM/Analytics/Productivité) avec active=ring-2, search + filtres, Featured grid 4-col 4 cartes (badge catégorie + installed + nom + développeur + description + étoiles + prix + installs + bouton Installer/Configurer), liste 8 extensions avec emoji + nom + check installed + étoiles + installs + prix + bouton
+  13. /admin/super-admin — Super Admin White-Label: badge Couronne rouge, 5 stats plateforme (Utilisateurs/Actifs/MRR/Revenu/Commandes), 4 tabs (Utilisateurs/Plans/Rôles/White-Label), Utilisateurs = tableau 8 users avec avatar+plan badge+statut CheckCircle2/Clock/XCircle+MRR+date+actions, Plans = 3 cartes pricing (Découverte/Business populaire ring-2/Pro) avec barre progression + revenu + features checks, Rôles = grid 5 cartes (point coloré + nom + count + permissions checks), White-Label = formulaire max-w-2xl (nom plateforme input + color picker primaire avec preview swatch + upload logo zone dashed + domaine custom + bouton Sauvegarder)
+- Ajout lien "Admin" dans navbar de la landing page vers /admin
+- Animations Framer Motion sur toutes les pages sauf Dashboard (container staggerChildren 0.06, item fade-in y-20)
+- Vérifications Agent Browser:
+  - 0 erreur runtime sur les 13 pages
+  - Dashboard rend correctement (sidebar 4 groupes, topbar, 4 stats, tableau commandes)
+  - Commandes Kanban: 5 colonnes avec cartes visibles
+  - Analytics: tous les charts Recharts rendus (AreaChart, BarChart, PieChart)
+  - WhatsApp: chat split-panel fonctionnel
+  - Sidebar collapsible fonctionne
+  - Dark mode fonctionne (variables CSS .dark ajoutées)
+  - Landing page intacte
+  - ESLint: 0 erreur, 1 warning faux positif (emoji rendering)
+
+Stage Summary:
+- Dashboard Admin YAA complet avec 13 pages fonctionnelles livrées
+- Stack: Next.js 16 + TypeScript + Tailwind 4 + shadcn/ui + Framer Motion + Recharts + next-themes
+- Sidebar collapsible avec 4 groupes (Principal/Intelligence/Extensions/Système) et 13 items
+- Topbar avec search + theme toggle + notifications + avatar
+- Toutes les données mock en FCFA format fr-FR
+- Dark/light mode fonctionnel
+- Animations staggerées sur toutes les pages sauf Dashboard
+- 0 erreur runtime, ESLint quasi clean (1 warning faux positif)

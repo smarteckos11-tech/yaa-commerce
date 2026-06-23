@@ -50,6 +50,12 @@ export function Navbar() {
 
           <div className="hidden lg:flex items-center gap-2">
             <a
+              href="/admin"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-yaa-green transition-colors rounded-lg"
+            >
+              Admin
+            </a>
+            <a
               href="#"
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-800 hover:text-yaa-green transition-colors rounded-lg"
             >
