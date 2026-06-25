@@ -56,8 +56,8 @@ export const SLIDES: Slide[] = [
     ],
     subtitle:
       "De la première vente à l'expansion internationale, YAA accompagne chaque étape de votre réussite. Boutique en ligne, paiements Mobile Money, livraison, WhatsApp Business — tout, réunifié dans une seule plateforme premium.",
-    primaryCta: { label: "Créer ma boutique gratuitement", href: "#tarifs" },
-    secondaryCta: { label: "Voir une démo", href: "#dashboard" },
+    primaryCta: { label: "Créer ma boutique gratuitement", href: "/signup" },
+    secondaryCta: { label: "Voir une démo", href: "/demo" },
     trustPoints: [
       "0 FCFA pour démarrer",
       "Sans engagement",
@@ -76,8 +76,8 @@ export const SLIDES: Slide[] = [
     ],
     subtitle:
       "Catalogue partagé, commandes automatiques, paiements Mobile Money en un clic. Vos clients commandent en deux messages, vous encaissez instantanément. Le commerce devient aussi simple qu'une discussion.",
-    primaryCta: { label: "Connecter mon WhatsApp", href: "#tarifs" },
-    secondaryCta: { label: "Voir un exemple", href: "#fonctionnalites" },
+    primaryCta: { label: "Connecter mon WhatsApp", href: "/signup?feature=whatsapp" },
+    secondaryCta: { label: "Voir un exemple", href: "/demo" },
     trustPoints: [
       "Réponses automatiques",
       "Catalogue synchronisé",
@@ -98,8 +98,8 @@ export const SLIDES: Slide[] = [
     ],
     subtitle:
       "Yango pour les livraisons express à Abidjan, DHL pour l'international, coursiers locaux pour l'intérieur du pays — Bouaké, Yamoussoukro, San-Pédro, Daloa, Man. YAA choisit le meilleur itinéraire, calcule les frais et suit chaque colis en temps réel.",
-    primaryCta: { label: "Démarrer la livraison", href: "#tarifs" },
-    secondaryCta: { label: "Voir les villes couvertes", href: "#fonctionnalites" },
+    primaryCta: { label: "Démarrer la livraison", href: "/signup?feature=livraison" },
+    secondaryCta: { label: "Voir les villes couvertes", href: "/demo" },
     trustPoints: [
       "Yango express à Abidjan",
       "Intérieur du pays couvert",
@@ -118,8 +118,8 @@ export const SLIDES: Slide[] = [
     ],
     subtitle:
       "Descriptions produits, posts réseaux sociaux, scripts WhatsApp, prévisions de ventes. L'IA YAA génère votre contenu marketing et anticipe vos ruptures de stock. Décidez avec des données, pas avec des intuitions.",
-    primaryCta: { label: "Activer l'IA YAA", href: "#tarifs" },
-    secondaryCta: { label: "Voir le dashboard", href: "#dashboard" },
+    primaryCta: { label: "Activer l'IA YAA", href: "/signup?feature=ia" },
+    secondaryCta: { label: "Voir le dashboard", href: "/admin/yaamind" },
     trustPoints: [
       "Descriptions auto générées",
       "Prévisions de ventes",
@@ -370,8 +370,8 @@ export const NAV_LINKS = [
   { label: "Fonctionnalités", href: "#fonctionnalites" },
   { label: "Tarifs", href: "#tarifs" },
   { label: "Témoignages", href: "#temoignages" },
-  { label: "Dashboard", href: "#dashboard" },
-  { label: "Contact", href: "#contact" },
+  { label: "Dashboard", href: "/demo" },
+  { label: "Contact", href: "/contact" },
 ];
 
 // ---------- BRAND LOGOS (official files in /public/brands) ----------

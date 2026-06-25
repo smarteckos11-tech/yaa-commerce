@@ -37,6 +37,9 @@ export const metadata: Metadata = {
     "boutique en ligne Afrique",
   ],
   authors: [{ name: "YAA" }],
+  icons: {
+    icon: "/icon.svg",
+  },
   openGraph: {
     title: "YAA — L'Afrique avance, vos ambitions prennent vie",
     description:

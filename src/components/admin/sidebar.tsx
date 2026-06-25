@@ -28,8 +28,17 @@ export function AdminSidebar({
     >
       {/* Header */}
       <div className="h-14 flex items-center gap-2.5 px-4 border-b border-sidebar-border">
-        <div className="w-8 h-8 rounded-lg bg-yaa-green-500 flex items-center justify-center text-white font-display font-extrabold text-lg flex-shrink-0">
-          Y
+        <div className="w-8 h-8 rounded-lg bg-yaa-green-500 flex items-center justify-center flex-shrink-0">
+          <svg width="20" height="20" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Y formed by cart handles */}
+            <path d="M10 9 L18 19 L26 9" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M18 19 L18 22" stroke="white" strokeWidth="2.6" strokeLinecap="round" />
+            {/* Cart body */}
+            <path d="M14 22 L26 22 L24.5 28 L15.5 28 Z" fill="#F7931A" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
+            {/* Wheels */}
+            <circle cx="16.5" cy="30.5" r="1.4" fill="white" />
+            <circle cx="23.5" cy="30.5" r="1.4" fill="white" />
+          </svg>
         </div>
         {!collapsed && (
           <div className="flex-1 min-w-0">

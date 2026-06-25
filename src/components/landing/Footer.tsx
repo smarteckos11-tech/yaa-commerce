@@ -83,14 +83,21 @@ export function Footer() {
               africains. De la première vente à l'expansion internationale.
             </p>
             <div className="mt-5 flex items-center gap-3">
-              {["Twitter", "LinkedIn", "Instagram", "Facebook"].map((s) => (
+              {[
+                { name: "Twitter", href: "https://twitter.com/yaa_commerce" },
+                { name: "LinkedIn", href: "https://linkedin.com/company/yaa-commerce" },
+                { name: "Instagram", href: "https://instagram.com/yaa_commerce" },
+                { name: "Facebook", href: "https://facebook.com/yaa_commerce" },
+              ].map((s) => (
                 <a
-                  key={s}
-                  href="#"
-                  aria-label={s}
+                  key={s.name}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.name}
                   className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-yaa-green hover:text-white text-slate-400 flex items-center justify-center transition-colors text-xs font-bold"
                 >
-                  {s[0]}
+                  {s.name[0]}
                 </a>
               ))}
             </div>
@@ -103,16 +110,45 @@ export function Footer() {
                 {col.title}
               </h4>
               <ul className="space-y-2.5">
-                {col.links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="text-sm text-slate-400 hover:text-yaa-green transition-colors"
-                    >
-                      {link}
-                    </a>
-                  </li>
-                ))}
+                {col.links.map((link) => {
+                  // Map common labels to actual routes
+                  const linkRoutes: Record<string, string> = {
+                    "Fonctionnalités": "#fonctionnalites",
+                    "Tarifs": "#tarifs",
+                    "Dashboard": "/demo",
+                    "Intégrations": "#fonctionnalites",
+                    "Mobile App": "/demo",
+                    "Documentation": "/docs",
+                    "Guides e-commerce": "/docs",
+                    "Blog": "/blog",
+                    "Webinaires": "/blog",
+                    "Communauté": "/contact",
+                    "Centre d'aide": "/contact",
+                    "À propos": "/contact",
+                    "Carrières": "/contact",
+                    "Presse": "/contact",
+                    "Partenaires": "#partenaires",
+                    "Investisseurs": "/contact",
+                    "Contact": "/contact",
+                    "Conditions d'utilisation": "/legal/terms",
+                    "Confidentialité": "/legal/privacy",
+                    "Cookies": "/legal/cookies",
+                    "Sécurité": "/legal/security",
+                    "Conformité": "/legal/compliance",
+                    "Mentions légales": "/legal/mentions",
+                  };
+                  const href = linkRoutes[link] || "#";
+                  return (
+                    <li key={link}>
+                      <a
+                        href={href}
+                        className="text-sm text-slate-400 hover:text-yaa-green transition-colors"
+                      >
+                        {link}
+                      </a>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}

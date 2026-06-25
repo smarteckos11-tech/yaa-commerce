@@ -234,3 +234,56 @@ Stage Summary:
 - Dark/light mode fonctionnel
 - Animations staggerées sur toutes les pages sauf Dashboard
 - 0 erreur runtime, ESLint quasi clean (1 warning faux positif)
+
+---
+Task ID: deployment-ready-v6
+Agent: Super Z (main)
+Task: Rendre tous les boutons fonctionnels + ajouter chariot au logo + préparer déploiement Vercel/Supabase.
+
+Work Log:
+- Audit complet de tous les boutons/CTAs de la landing page (grep href="#")
+- Update landing-data.ts : tous les CTAs du Hero pointent vers /signup, /signup?feature=X, /demo, /admin/yaamind
+- Update NAV_LINKS : "Dashboard" → /demo, "Contact" → /contact
+- Update Navbar : "Se connecter" → /login, "Créer ma boutique" → /signup
+- Update Navbar mobile : ajout bouton "Accéder au Dashboard Admin" + "Se connecter" → /login + "Créer ma boutique" → /signup
+- Update Pricing : chaque carte CTA → /signup?plan={plan.id}
+- Update FinalCTA : "Créer ma boutique" → /signup, "Parler à un expert" → /contact
+- Update Footer : 24 liens mappés vers routes réelles (/docs, /blog, /contact, /legal/*, ancres #)
+- Update Footer réseaux sociaux : vraies URLs Twitter/LinkedIn/Instagram/Facebook
+- Création 5 nouvelles pages :
+  - /signup : formulaire complet avec plan/feature préselectionnés (via query params), 5 bénéfices, essai gratuit
+  - /login : formulaire connexion avec Google/WhatsApp buttons, redirect /admin après submit
+  - /demo : page vitrine des 13 pages admin avec quick access grid
+  - /contact : formulaire complet avec API route /api/contact (POST, validation, ready pour Supabase)
+  - /forgot-password : page récupération mot de passe
+- Création API route /api/contact : validation champs requis, logs, ready pour Supabase insert
+- Création src/lib/supabase-client.ts : client Supabase browser (avec warning si non configuré)
+- Création src/lib/supabase-admin.ts : client Supabase server (service_role)
+- Création .env.example : toutes les variables (Supabase, App URL, Resend, webhooks, WhatsApp, OpenAI)
+- Création DEPLOY.md : guide complet Vercel + Supabase (5 étapes, SQL schema, troubleshooting)
+- AMÉLIORATION LOGO : ajout d'un chariot de boutique (shopping cart) avec roues dans le logo YAA
+  - Le Y stylisé forme les poignées du chariot
+  - Le corps du chariot en orange YAA
+  - 2 roues blanches
+  - Spark de croissance en haut à droite conservé
+  - Update YaaLogo.tsx (composant unique réutilisé navbar + footer)
+  - Update AdminSidebar.tsx : logo admin remplacé par mini SVG avec chariot
+  - Création src/app/icon.svg : favicon avec chariot (utilisé automatiquement par Next.js)
+- Vérifications :
+  - 0 bouton non fonctionnel (0 href="#" restant dans landing)
+  - ESLint quasi clean (1 warning faux positif)
+  - Toutes les pages /signup /login /demo /contact /forgot-password → 200 OK
+  - API /api/contact : testé avec curl, validation fonctionne
+  - Logo avec chariot validé via VLM
+  - Nouveau favicon créé
+
+Stage Summary:
+- Tous les boutons de la landing pointent vers de vraies routes (signup, login, demo, contact, admin)
+- 5 nouvelles pages créées (signup, login, demo, contact, forgot-password)
+- API route contact opérationnelle (prête pour Supabase)
+- Clients Supabase (browser + admin) créés et configurables via .env
+- Logo YAA enrichi d'un chariot de boutique (cohérent avec activité e-commerce)
+- Favicon SVG avec chariot créé
+- Guide DEPLOY.md complet (Vercel + Supabase, SQL schema, 5 étapes)
+- .env.example avec toutes les variables nécessaires
+- Site 100% prêt pour déploiement

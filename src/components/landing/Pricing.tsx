@@ -167,7 +167,7 @@ function PricingCard({
 
       {/* CTA */}
       <a
-        href="#"
+        href={`/signup?plan=${plan.id}`}
         className={cn(
           "btn-shine group mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-xl transition-all",
           isHighlight

@@ -57,14 +57,14 @@ export function Navbar() {
               <span className="hidden sm:inline">Admin</span>
             </a>
             <a
-              href="#"
+              href="/login"
               className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-800 hover:text-yaa-green transition-colors rounded-lg"
             >
               <LogIn className="w-4 h-4" />
               Se connecter
             </a>
             <a
-              href="#tarifs"
+              href="/signup"
               className="btn-shine group inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-yaa-green hover:bg-yaa-green-dark rounded-lg shadow-glow-green transition-all"
             >
               Créer ma boutique
@@ -134,13 +134,13 @@ export function Navbar() {
                   Accéder au Dashboard Admin
                 </a>
                 <a
-                  href="#"
+                  href="/login"
                   className="px-4 py-3 text-center text-sm font-semibold text-slate-800 border border-slate-200 rounded-lg"
                 >
                   Se connecter
                 </a>
                 <a
-                  href="#tarifs"
+                  href="/signup"
                   onClick={() => setMobileOpen(false)}
                   className="px-4 py-3 text-center text-sm font-semibold text-white bg-yaa-green hover:bg-yaa-green-dark rounded-lg"
                 >

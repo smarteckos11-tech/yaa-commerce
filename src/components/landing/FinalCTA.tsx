@@ -63,14 +63,14 @@ export function FinalCTA() {
           className="mt-8 flex flex-wrap items-center justify-center gap-3"
         >
           <a
-            href="#"
+            href="/signup"
             className="btn-shine group inline-flex items-center gap-2 px-6 py-3.5 text-base font-semibold text-slate-900 bg-white hover:bg-slate-50 rounded-xl shadow-2xl transition-all"
           >
             Créer ma boutique gratuitement
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </a>
           <a
-            href="#"
+            href="/contact"
             className="inline-flex items-center gap-2 px-6 py-3.5 text-base font-semibold text-white bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 rounded-xl transition-all"
           >
             Parler à un expert
