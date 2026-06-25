@@ -30,14 +30,13 @@ export function AdminSidebar({
       <div className="h-14 flex items-center gap-2.5 px-4 border-b border-sidebar-border">
         <div className="w-8 h-8 rounded-lg bg-yaa-green-500 flex items-center justify-center flex-shrink-0">
           <svg width="20" height="20" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Y formed by cart handles */}
-            <path d="M10 9 L18 19 L26 9" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M18 19 L18 22" stroke="white" strokeWidth="2.6" strokeLinecap="round" />
-            {/* Cart body */}
-            <path d="M14 22 L26 22 L24.5 28 L15.5 28 Z" fill="#F7931A" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-            {/* Wheels */}
-            <circle cx="16.5" cy="30.5" r="1.4" fill="white" />
-            <circle cx="23.5" cy="30.5" r="1.4" fill="white" />
+            {/* Cart handle */}
+            <path d="M7 9 L11 9 L13.5 23" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {/* Cart basket body */}
+            <path d="M13 13 L29 13 L27 22 L15 22 Z" fill="#F7931A" stroke="white" strokeWidth="1.4" strokeLinejoin="round" />
+            {/* Cart wheels */}
+            <circle cx="16" cy="26" r="1.6" fill="white" />
+            <circle cx="26" cy="26" r="1.6" fill="white" />
           </svg>
         </div>
         {!collapsed && (

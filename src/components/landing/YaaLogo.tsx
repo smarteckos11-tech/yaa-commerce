@@ -42,35 +42,27 @@ export function YaaLogo({
           {/* Rounded square background */}
           <rect width="36" height="36" rx="10" fill={`url(#${uid}-grad)`} />
 
-          {/* Stylized "Y" — formed by shopping cart handles */}
+          {/* Simple shopping cart — classic boutique cart icon */}
+          {/* Cart handle (left arm going up) */}
           <path
-            d="M10 9 L18 19 L26 9"
+            d="M7 9 L11 9 L13.5 23"
             stroke="white"
-            strokeWidth="2.6"
+            strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            fill="none"
           />
+          {/* Cart basket body (trapezoidal) */}
           <path
-            d="M18 19 L18 22"
-            stroke="white"
-            strokeWidth="2.6"
-            strokeLinecap="round"
-          />
-
-          {/* Shopping cart body — classic boutique cart */}
-          <path
-            d="M14 22 L26 22 L24.5 28 L15.5 28 Z"
+            d="M13 13 L29 13 L27 22 L15 22 Z"
             fill={`url(#${uid}-orange)`}
             stroke="white"
-            strokeWidth="1.2"
+            strokeWidth="1.4"
             strokeLinejoin="round"
           />
           {/* Cart wheels */}
-          <circle cx="16.5" cy="30.5" r="1.4" fill="white" />
-          <circle cx="23.5" cy="30.5" r="1.4" fill="white" />
-
-          {/* Small "growth spark" dot top-right (kept for brand identity) */}
-          <circle cx="29" cy="8" r="2.4" fill={`url(#${uid}-orange)`} />
+          <circle cx="16" cy="26" r="1.6" fill="white" />
+          <circle cx="26" cy="26" r="1.6" fill="white" />
         </svg>
       </div>
       <span

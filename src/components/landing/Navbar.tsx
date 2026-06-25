@@ -28,44 +28,47 @@ export function Navbar() {
       >
         <nav
           className={cn(
-            "w-full max-w-7xl flex items-center justify-between rounded-2xl px-4 sm:px-5 py-2.5 transition-all duration-300",
+            "w-full max-w-7xl flex items-center justify-between gap-4 rounded-2xl px-4 sm:px-5 py-2.5 transition-all duration-300",
             scrolled
               ? "bg-white/80 backdrop-blur-xl border border-slate-200/80 shadow-soft"
               : "bg-white/40 backdrop-blur-md border border-transparent"
           )}
         >
-          <YaaLogo size="md" />
+          {/* Left — Logo */}
+          <YaaLogo size="md" className="flex-shrink-0" />
 
-          <div className="hidden lg:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+          {/* Center — Navigation links */}
+          <div className="hidden lg:flex items-center gap-1 mx-auto">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="px-3.5 py-2 text-sm font-medium text-slate-700 hover:text-yaa-green transition-colors rounded-lg hover:bg-yaa-green-soft/60"
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-yaa-green transition-colors rounded-lg hover:bg-yaa-green-soft/60 whitespace-nowrap"
               >
                 {link.label}
               </a>
             ))}
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right — Actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             <a
               href="/admin"
-              className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold text-slate-700 hover:text-yaa-green hover:bg-yaa-green-soft/50 transition-colors rounded-lg"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-slate-700 hover:text-yaa-green hover:bg-yaa-green-soft/50 transition-colors rounded-lg whitespace-nowrap"
             >
               <LayoutDashboard className="w-4 h-4" />
-              <span className="hidden sm:inline">Admin</span>
+              Admin
             </a>
             <a
               href="/login"
-              className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-800 hover:text-yaa-green transition-colors rounded-lg"
+              className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-800 hover:text-yaa-green transition-colors rounded-lg whitespace-nowrap"
             >
               <LogIn className="w-4 h-4" />
               Se connecter
             </a>
             <a
               href="/signup"
-              className="btn-shine group inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-yaa-green hover:bg-yaa-green-dark rounded-lg shadow-glow-green transition-all"
+              className="btn-shine group inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-yaa-green hover:bg-yaa-green-dark rounded-lg shadow-glow-green transition-all whitespace-nowrap"
             >
               Créer ma boutique
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -73,7 +76,7 @@ export function Navbar() {
           </div>
 
           <button
-            className="lg:hidden p-2 text-slate-800"
+            className="lg:hidden p-2 text-slate-800 flex-shrink-0"
             onClick={() => setMobileOpen(true)}
             aria-label="Ouvrir le menu"
           >
