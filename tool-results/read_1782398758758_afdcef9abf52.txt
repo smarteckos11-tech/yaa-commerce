@@ -1,0 +1,412 @@
+     1→    90→export const PRODUCTS: Product[] = [
+     2→    91→  { id: "P-001", name: "Boubou royal brodé", sku: "MOD-BR-001", category: "Mode", type: "physique", price: 45000, stock: 24, sold: 156, status: "Actif", emoji: "👔" },
+     3→    92→  { id: "P-002", name: "Sac en cuir Faso Dan Fani", sku: "ART-SC-002", category: "Artisanat", type: "physique", price: 28000, stock: 8, sold: 89, status: "Actif", emoji: "👜" },
+     4→    93→  { id: "P-003", name: "Beurre de karité bio 250g", sku: "BEA-BK-003", category: "Beauté", type: "physique", price: 8500, stock: 156, sold: 423, status: "Actif", emoji: "🧴" },
+     5→    94→  { id: "P-004", name: "Formation E-commerce Africa", sku: "DIG-FE-004", category: "Digital", type: "digital", price: 75000, stock: null, sold: 234, status: "Actif", emoji: "🎓" },
+     6→    95→  { id: "P-005", name: "Café Arabica Man 1kg", sku: "ALI-CA-005", category: "Alimentation", type: "physique", price: 12000, stock: 5, sold: 312, status: "Actif", emoji: "☕" },
+     7→    96→  { id: "P-006", name: "Tabouret sculpté Ivoirien", sku: "MOB-TS-006", category: "Mobilier", type: "physique", price: 38000, stock: 12, sold: 47, status: "Actif", emoji: "🪑" },
+     8→    97→  { id: "P-007", name: "Djembe professionnel", sku: "MUS-DJ-007", category: "Musique", type: "physique", price: 65000, stock: 3, sold: 28, status: "Actif", emoji: "🥁" },
+     9→    98→  { id: "P-008", name: "Pagne wax premium 6 yards", sku: "MOD-PW-008", category: "Mode", type: "physique", price: 18000, stock: 89, sold: 245, status: "Actif", emoji: "👗" },
+    10→    99→  { id: "P-009", name: "Savon noir africain", sku: "BEA-SN-009", category: "Beauté", type: "physique", price: 4500, stock: 234, sold: 567, status: "Actif", emoji: "🧼" },
+    11→   100→  { id: "P-010", name: "E-book Recettes Africaines", sku: "DIG-EB-010", category: "Digital", type: "digital", price: 15000, stock: null, sold: 178, status: "Actif", emoji: "📚" },
+    12→   101→];
+    13→   102→
+    14→   103→export const PRODUCT_STATS = [
+    15→   104→  { label: "Total", value: 342, color: "green" as const, icon: "Package" },
+    16→   105→  { label: "Actifs", value: 289, color: "orange" as const, icon: "CheckCircle2" },
+    17→   106→  { label: "Stock Faible", value: 23, color: "red" as const, icon: "AlertTriangle" },
+    18→   107→  { label: "Digitals", value: 54, color: "purple" as const, icon: "Download" },
+    19→   108→];
+    20→   109→
+    21→   110→export const PRODUCT_CATEGORIES = ["Toutes", "Mode", "Artisanat", "Beauté", "Digital", "Alimentation", "Mobilier", "Musique"];
+    22→   111→
+    23→   112→// Category color mapping
+    24→   113→export const CATEGORY_COLORS: Record<Product["category"], { bg: string; text: string; ring: string }> = {
+    25→   114→  Mode: { bg: "bg-rose-100 dark:bg-rose-950/50", text: "text-rose-700 dark:text-rose-300", ring: "ring-rose-200 dark:ring-rose-900" },
+    26→   115→  Artisanat: { bg: "bg-amber-100 dark:bg-amber-950/50", text: "text-amber-700 dark:text-amber-300", ring: "ring-amber-200 dark:ring-amber-900" },
+    27→   116→  Beauté: { bg: "bg-emerald-100 dark:bg-emerald-950/50", text: "text-emerald-700 dark:text-emerald-300", ring: "ring-emerald-200 dark:ring-emerald-900" },
+    28→   117→  Digital: { bg: "bg-violet-100 dark:bg-violet-950/50", text: "text-violet-700 dark:text-violet-300", ring: "ring-violet-200 dark:ring-violet-900" },
+    29→   118→  Alimentation: { bg: "bg-orange-100 dark:bg-orange-950/50", text: "text-orange-700 dark:text-orange-300", ring: "ring-orange-200 dark:ring-orange-900" },
+    30→   119→  Mobilier: { bg: "bg-sky-100 dark:bg-sky-950/50", text: "text-sky-700 dark:text-sky-300", ring: "ring-sky-200 dark:ring-sky-900" },
+    31→   120→  Musique: { bg: "bg-pink-100 dark:bg-pink-950/50", text: "text-pink-700 dark:text-pink-300", ring: "ring-pink-200 dark:ring-pink-900" },
+    32→   121→};
+    33→   122→
+    34→   123→// ---------- ORDERS (KANBAN) ----------
+    35→   124→export type OrderStatus = "Nouveau" | "En préparation" | "Expédié" | "Livré" | "Annulé";
+    36→   125→export type PaymentMethod = "Wave" | "Orange Money" | "MTN MoMo" | "Moov" | "Carte bancaire";
+    37→   126→
+    38→   127→export const PAYMENT_COLORS: Record<PaymentMethod, { bg: string; text: string; dot: string }> = {
+    39→   128→  "Wave": { bg: "bg-sky-100 dark:bg-sky-950/50", text: "text-sky-700 dark:text-sky-300", dot: "#1DC7EA" },
+    40→   129→  "Orange Money": { bg: "bg-orange-100 dark:bg-orange-950/50", text: "text-orange-700 dark:text-orange-300", dot: "#FF6600" },
+    41→   130→  "MTN MoMo": { bg: "bg-yellow-100 dark:bg-yellow-950/50", text: "text-yellow-700 dark:text-yellow-300", dot: "#FFCC00" },
+    42→   131→  "Moov": { bg: "bg-blue-100 dark:bg-blue-950/50", text: "text-blue-700 dark:text-blue-300", dot: "#00A0E3" },
+    43→   132→  "Carte bancaire": { bg: "bg-purple-100 dark:bg-purple-950/50", text: "text-purple-700 dark:text-purple-300", dot: "#8B5CF6" },
+    44→   133→};
+    45→   134→
+    46→   135→export const ORDER_STATUS_COLORS: Record<OrderStatus, { border: string; bg: string; text: string; dot: string }> = {
+    47→   136→  "Nouveau": { border: "border-sky-500", bg: "bg-sky-100 dark:bg-sky-950/50", text: "text-sky-700 dark:text-sky-300", dot: "bg-sky-500" },
+    48→   137→  "En préparation": { border: "border-amber-500", bg: "bg-amber-100 dark:bg-amber-950/50", text: "text-amber-700 dark:text-amber-300", dot: "bg-amber-500" },
+    49→   138→  "Expédié": { border: "border-violet-500", bg: "bg-violet-100 dark:bg-violet-950/50", text: "text-violet-700 dark:text-violet-300", dot: "bg-violet-500" },
+    50→   139→  "Livré": { border: "border-yaa-green-500", bg: "bg-yaa-green-50 dark:bg-yaa-green-950/50", text: "text-yaa-green-700 dark:text-yaa-green-300", dot: "bg-yaa-green-500" },
+    51→   140→  "Annulé": { border: "border-rose-500", bg: "bg-rose-100 dark:bg-rose-950/50", text: "text-rose-700 dark:text-rose-300", dot: "bg-rose-500" },
+    52→   141→};
+    53→   142→
+    54→   143→export type Order = {
+    55→   144→  id: string;
+    56→   145→  customer: string;
+    57→   146→  city: string;
+    58→   147→  country: string;
+    59→   148→  items: string;
+    60→   149→  amount: number;
+    61→   150→  payment: PaymentMethod;
+    62→   151→  time: string;
+    63→   152→  avatar: string;
+    64→   153→};
+    65→   154→
+    66→   155→export const KANBAN_COLUMNS: { status: OrderStatus; orders: Order[] }[] = [
+    67→   156→  {
+    68→   157→    status: "Nouveau",
+    69→   158→    orders: [
+    70→   159→      { id: "CMD-2842", customer: "Mariam Sow", city: "Dakar", country: "Sénégal", items: "Sac cuir Faso Dan Fani ×1, Café Arabica ×2", amount: 52000, payment: "Wave", time: "Il y a 12 min", avatar: "MS" },
+    71→   160→      { id: "CMD-2843", customer: "Sékou Traoré", city: "Bamako", country: "Mali", items: "Boubou royal brodé ×1", amount: 45000, payment: "Orange Money", time: "Il y a 25 min", avatar: "ST" },
+    72→   161→      { id: "CMD-2844", customer: "Grace Adeyemi", city: "Lagos", country: "Nigeria", items: "Beurre karité ×3, Savon noir ×5", amount: 48000, payment: "MTN MoMo", time: "Il y a 38 min", avatar: "GA" },
+    73→   162→      { id: "CMD-2845", customer: "Omar Ndiaye", city: "Abidjan", country: "Côte d'Ivoire", items: "Formation E-commerce Africa", amount: 75000, payment: "Wave", time: "Il y a 52 min", avatar: "ON" },
+    74→   163→    ],
+    75→   164→  },
+    76→   165→  {
+    77→   166→    status: "En préparation",
+    78→   167→    orders: [
+    79→   168→      { id: "CMD-2838", customer: "Kwame Mensah", city: "Accra", country: "Ghana", items: "Djembe professionnel ×1, Pagne wax ×2", amount: 101000, payment: "Carte bancaire", time: "Il y a 2h", avatar: "KM" },
+    80→   169→      { id: "CMD-2839", customer: "Fatou Diop", city: "Dakar", country: "Sénégal", items: "Tabouret sculpté ×1", amount: 38000, payment: "Orange Money", time: "Il y a 3h", avatar: "FD" },
+    81→   170→      { id: "CMD-2840", customer: "Ibrahim Koné", city: "Bamako", country: "Mali", items: "Café Arabica ×5, Beurre karité ×4", amount: 94000, payment: "Moov", time: "Il y a 4h", avatar: "IK" },
+    82→   171→    ],
+    83→   172→  },
+    84→   173→  {
+    85→   174→    status: "Expédié",
+    86→   175→    orders: [
+    87→   176→      { id: "CMD-2835", customer: "Aïcha Bello", city: "Cotonou", country: "Bénin", items: "Pagne wax premium ×3", amount: 54000, payment: "MTN MoMo", time: "Hier 18:30", avatar: "AB" },
+    88→   177→      { id: "CMD-2836", customer: "Yao Kouassi", city: "Abidjan", country: "Côte d'Ivoire", items: "E-book Recettes Africaines", amount: 15000, payment: "Wave", time: "Hier 16:45", avatar: "YK" },
+    89→   178→    ],
+    90→   179→  },
+    91→   180→  {
+    92→   181→    status: "Livré",
+    93→   182→    orders: [
+    94→   183→      { id: "CMD-2831", customer: "Aminata Touré", city: "Abidjan", country: "Côte d'Ivoire", items: "Sac cuir ×1, Beurre karité ×2", amount: 45000, payment: "Orange Money", time: "Hier 14:20", avatar: "AT" },
+    95→   184→      { id: "CMD-2832", customer: "Boubacar Sy", city: "Dakar", country: "Sénégal", items: "Boubou royal ×2", amount: 90000, payment: "Wave", time: "Hier 11:00", avatar: "BS" },
+    96→   185→      { id: "CMD-2833", customer: "Linda Mbeki", city: "Accra", country: "Ghana", items: "Savon noir ×10, Beurre karité ×5", amount: 67500, payment: "Carte bancaire", time: "Lun 18:45", avatar: "LM" },
+    97→   186→      { id: "CMD-2834", customer: "Moussa Camara", city: "Conakry", country: "Guinée", items: "Djembe pro ×1, Tabouret sculpté ×1", amount: 103000, payment: "Orange Money", time: "Lun 15:30", avatar: "MC" },
+    98→   187→    ],
+    99→   188→  },
+   100→   189→  {
+   101→   190→    status: "Annulé",
+   102→   191→    orders: [
+   103→   192→      { id: "CMD-2828", customer: "Awa Diallo", city: "Bamako", country: "Mali", items: "Formation E-commerce Africa", amount: 75000, payment: "Moov", time: "Lun 09:15", avatar: "AD" },
+   104→   193→    ],
+   105→   194→  },
+   106→   195→];
+   107→   196→
+   108→   197→export const ORDER_SUMMARY = [
+   109→   198→  { status: "Nouveau" as const, count: 4, total: 220000, color: "blue" },
+   110→   199→  { status: "En préparation" as const, count: 3, total: 233000, color: "amber" },
+   111→   200→  { status: "Expédié" as const, count: 2, total: 69000, color: "purple" },
+   112→   201→  { status: "Livré" as const, count: 4, total: 305500, color: "green" },
+   113→   202→  { status: "Annulé" as const, count: 1, total: 75000, color: "red" },
+   114→   203→];
+   115→   204→
+   116→   205→// ---------- CUSTOMERS ----------
+   117→   206→export type Customer = {
+   118→   207→  id: string;
+   119→   208→  name: string;
+   120→   209→  email: string;
+   121→   210→  whatsapp: string;
+   122→   211→  city: string;
+   123→   212→  country: string;
+   124→   213→  avatar: string;
+   125→   214→  totalSpent: number;
+   126→   215→  orders: number;
+   127→   216→  loyalty: number; // 0-100
+   128→   217→  segment: "VIP" | "Régulier" | "Actif" | "Nouveau";
+   129→   218→  lastOrder: string;
+   130→   219→};
+   131→   220→
+   132→   221→export const CUSTOMERS: Customer[] = [
+   133→   222→  { id: "C-001", name: "Aminata Touré", email: "aminata.t@gmail.com", whatsapp: "+225 07 12 34 56", city: "Abidjan", country: "Côte d'Ivoire", avatar: "AT", totalSpent: 245000, orders: 18, loyalty: 92, segment: "VIP", lastOrder: "Aujourd'hui" },
+   134→   223→  { id: "C-002", name: "Boubacar Sy", email: "bsy@gmail.com", whatsapp: "+221 77 123 45 67", city: "Dakar", country: "Sénégal", avatar: "BS", totalSpent: 189000, orders: 14, loyalty: 88, segment: "VIP", lastOrder: "Hier" },
+   135→   224→  { id: "C-003", name: "Fatou Diop", email: "fatou.diop@gmail.com", whatsapp: "+221 76 987 65 43", city: "Dakar", country: "Sénégal", avatar: "FD", totalSpent: 134000, orders: 11, loyalty: 76, segment: "Régulier", lastOrder: "Il y a 2j" },
+   136→   225→  { id: "C-004", name: "Kwame Mensah", email: "kwame.m@gmail.com", whatsapp: "+233 24 567 89 01", city: "Accra", country: "Ghana", avatar: "KM", totalSpent: 98000, orders: 8, loyalty: 65, segment: "Régulier", lastOrder: "Il y a 3j" },
+   137→   226→  { id: "C-005", name: "Aïcha Bello", email: "aicha.bello@gmail.com", whatsapp: "+229 96 11 22 33", city: "Cotonou", country: "Bénin", avatar: "AB", totalSpent: 67000, orders: 6, loyalty: 58, segment: "Actif", lastOrder: "Il y a 5j" },
+   138→   227→  { id: "C-006", name: "Ibrahim Koné", email: "ibrahim.k@gmail.com", whatsapp: "+223 76 12 34 56", city: "Bamako", country: "Mali", avatar: "IK", totalSpent: 56000, orders: 5, loyalty: 52, segment: "Actif", lastOrder: "Il y a 1sem" },
+   139→   228→  { id: "C-007", name: "Grace Adeyemi", email: "grace.adeyemi@gmail.com", whatsapp: "+234 803 123 45 67", city: "Lagos", country: "Nigeria", avatar: "GA", totalSpent: 42000, orders: 4, loyalty: 45, segment: "Actif", lastOrder: "Il y a 1sem" },
+   140→   229→  { id: "C-008", name: "Moussa Camara", email: "moussa.c@gmail.com", whatsapp: "+224 622 33 44 55", city: "Conakry", country: "Guinée", avatar: "MC", totalSpent: 31000, orders: 3, loyalty: 32, segment: "Nouveau", lastOrder: "Il y a 2sem" },
+   141→   230→  { id: "C-009", name: "Linda Mbeki", email: "linda.m@gmail.com", whatsapp: "+233 27 999 88 77", city: "Accra", country: "Ghana", avatar: "LM", totalSpent: 18500, orders: 2, loyalty: 24, segment: "Nouveau", lastOrder: "Il y a 3sem" },
+   142→   231→  { id: "C-010", name: "Omar Ndiaye", email: "omar.n@gmail.com", whatsapp: "+225 05 89 67 43", city: "Abidjan", country: "Côte d'Ivoire", avatar: "ON", totalSpent: 12000, orders: 1, loyalty: 12, segment: "Nouveau", lastOrder: "Aujourd'hui" },
+   143→   232→];
+   144→   233→
+   145→   234→export const CUSTOMER_STATS = [
+   146→   235→  { label: "Total Clients", value: 1247, color: "green" as const, icon: "Users" },
+   147→   236→  { label: "VIP", value: 186, color: "amber" as const, icon: "Crown" },
+   148→   237→  { label: "Dépenses Moyennes", value: 38250, format: "fcfa", color: "orange" as const, icon: "Wallet" },
+   149→   238→  { label: "Taux Rétention", value: 73, format: "percent", color: "rose" as const, icon: "RefreshCw" },
+   150→   239→];
+   151→   240→
+   152→   241→export const CUSTOMER_SEGMENTS = ["Tous", "VIP", "Régulier", "Actif", "Nouveau"];
+   153→   242→export const CUSTOMER_COUNTRIES = ["Tous", "Côte d'Ivoire", "Sénégal", "Ghana", "Mali", "Nigeria", "Bénin"];
+   154→   243→
+   155→   244→export const SEGMENT_COLORS = {
+   156→   245→  VIP: { bg: "bg-amber-100 dark:bg-amber-950/50", text: "text-amber-700 dark:text-amber-300" },
+   157→   246→  Régulier: { bg: "bg-yaa-green-100 dark:bg-yaa-green-950/50", text: "text-yaa-green-700 dark:text-yaa-green-300" },
+   158→   247→  Actif: { bg: "bg-sky-100 dark:bg-sky-950/50", text: "text-sky-700 dark:text-sky-300" },
+   159→   248→  Nouveau: { bg: "bg-violet-100 dark:bg-violet-950/50", text: "text-violet-700 dark:text-violet-300" },
+   160→   249→};
+   161→   250→
+   162→   251→// ---------- PAYMENTS ----------
+   163→   252→export type Provider = {
+   164→   253→  name: string;
+   165→   254→  type: string;
+   166→   255→  country: string;
+   167→   256→  connected: boolean;
+   168→   257→  balance?: number;
+   169→   258→  transactions?: number;
+   170→   259→  color: string;
+   171→   260→  initials: string;
+   172→   261→};
+   173→   262→
+   174→   263→export const PROVIDERS: Provider[] = [
+   175→   264→  { name: "Wave", type: "Mobile Money", country: "Sénégal, Côte d'Ivoire", connected: true, balance: 1850000, transactions: 542, color: "#1DC7EA", initials: "W" },
+   176→   265→  { name: "Orange Money", type: "Mobile Money", country: "Côte d'Ivoire, Mali", connected: true, balance: 1240000, transactions: 487, color: "#FF6600", initials: "OM" },
+   177→   266→  { name: "MTN MoMo", type: "Mobile Money", country: "Ghana, Côte d'Ivoire", connected: true, balance: 890000, transactions: 312, color: "#FFCC00", initials: "MTN" },
+   178→   267→  { name: "Moov Money", type: "Mobile Money", country: "Bénin, Burkina", connected: true, balance: 425000, transactions: 198, color: "#00A0E3", initials: "MV" },
+   179→   268→  { name: "CinetPay", type: "Agrégateur", country: "Afrique de l'Ouest", connected: true, balance: 320000, transactions: 156, color: "#1B4D8C", initials: "CP" },
+   180→   269→  { name: "Flutterwave", type: "Agrégateur", country: "Pan-africain", connected: true, balance: 100000, transactions: 152, color: "#F5A623", initials: "FW" },
+   181→   270→  { name: "PayDunya", type: "Agrégateur", country: "Sénégal", connected: false, color: "#1B9E77", initials: "PD" },
+   182→   271→  { name: "Stripe", type: "Carte bancaire", country: "International", connected: false, color: "#635BFF", initials: "S" },
+   183→   272→  { name: "PayPal", type: "Portefeuille", country: "International", connected: false, color: "#0070BA", initials: "PP" },
+   184→   273→];
+   185→   274→
+   186→   275→export const PAYMENT_STATS = [
+   187→   276→  { label: "Solde Total", value: 4825000, format: "fcfa", color: "green" as const, icon: "Wallet" },
+   188→   277→  { label: "Transactions", value: 1847, color: "orange" as const, icon: "CreditCard" },
+   189→   278→  { label: "Mobile Money", value: 6, suffix: " connectés", color: "purple" as const, icon: "Smartphone" },
+   190→   279→  { label: "Taux Succès", value: 96.2, format: "percent", color: "sky" as const, icon: "CheckCircle2" },
+   191→   280→];
+   192→   281→
+   193→   282→export type Transaction = {
+   194→   283→  id: string;
+   195→   284→  client: string;
+   196→   285→  provider: PaymentMethod;
+   197→   286→  amount: number;
+   198→   287→  reference: string;
+   199→   288→  status: "Réussi" | "En attente" | "Échecé";
+   200→   289→  date: string;
+   201→   290→};
+   202→   291→
+   203→   292→export const TRANSACTIONS: Transaction[] = [
+   204→   293→  { id: "TX-9821", client: "Aminata Touré", provider: "Orange Money", amount: 45000, reference: "OM-784512", status: "Réussi", date: "24 Jun 2026, 14:32" },
+   205→   294→  { id: "TX-9820", client: "Mariam Sow", provider: "Wave", amount: 52000, reference: "WV-452139", status: "Réussi", date: "24 Jun 2026, 14:18" },
+   206→   295→  { id: "TX-9819", client: "Sékou Traoré", provider: "Orange Money", amount: 45000, reference: "OM-784489", status: "Réussi", date: "24 Jun 2026, 14:05" },
+   207→   296→  { id: "TX-9818", client: "Grace Adeyemi", provider: "MTN MoMo", amount: 48000, reference: "MTN-321654", status: "Réussi", date: "24 Jun 2026, 13:52" },
+   208→   297→  { id: "TX-9817", client: "Omar Ndiaye", provider: "Wave", amount: 75000, reference: "WV-451998", status: "En attente", date: "24 Jun 2026, 13:38" },
+   209→   298→  { id: "TX-9816", client: "Kwame Mensah", provider: "Carte bancaire", amount: 101000, reference: "CB-998471", status: "Réussi", date: "24 Jun 2026, 12:45" },
+   210→   299→  { id: "TX-9815", client: "Fatou Diop", provider: "Orange Money", amount: 38000, reference: "OM-784012", status: "Réussi", date: "24 Jun 2026, 11:30" },
+   211→   300→  { id: "TX-9814", client: "Ibrahim Koné", provider: "Moov", amount: 94000, reference: "MV-110892", status: "Réussi", date: "24 Jun 2026, 10:15" },
+   212→   301→  { id: "TX-9813", client: "Awa Diallo", provider: "Moov", amount: 75000, reference: "MV-110754", status: "Échecé", date: "24 Jun 2026, 09:45" },
+   213→   302→  { id: "TX-9812", client: "Aïcha Bello", provider: "MTN MoMo", amount: 54000, reference: "MTN-321001", status: "Réussi", date: "24 Jun 2026, 09:20" },
+   214→   303→];
+   215→   304→
+   216→   305→// ---------- WHATSAPP ----------
+   217→   306→export const WHATSAPP_STATS = [
+   218→   307→  { label: "Conversations", value: 892, color: "green" as const, icon: "MessageCircle" },
+   219→   308→  { label: "Réponses IA", value: 2341, color: "orange" as const, icon: "Bot" },
+   220→   309→  { label: "Conversion", value: 6.2, format: "percent", color: "emerald" as const, icon: "TrendingUp" },
+   221→   310→  { label: "Revenus", value: 567000, format: "fcfa", color: "yellow" as const, icon: "Wallet" },
+   222→   311→];
+   223→   312→
+   224→   313→export type WhatsAppConversation = {
+   225→   314→  id: string;
+   226→   315→  name: string;
+   227→   316→  lastMessage: string;
+   228→   317→  time: string;
+   229→   318→  unread: number;
+   230→   319→  online: boolean;
+   231→   320→  vip: boolean;
+   232→   321→  avatar: string;
+   233→   322→};
+   234→   323→
+   235→   324→export const WHATSAPP_CONVERSATIONS: WhatsAppConversation[] = [
+   236→   325→  { id: "W-1", name: "Mariam Sow", lastMessage: "Bonjour, le sac est dispo ?", time: "14:32", unread: 2, online: true, vip: true, avatar: "MS" },
+   237→   326→  { id: "W-2", name: "Sékou Traoré", lastMessage: "Merci pour la commande 🙏", time: "13:45", unread: 0, online: true, vip: false, avatar: "ST" },
+   238→   327→  { id: "W-3", name: "Grace Adeyemi", lastMessage: "Vous livrez à Lagos ?", time: "12:20", unread: 3, online: false, vip: true, avatar: "GA" },
+   239→   328→  { id: "W-4", name: "Omar Ndiaye", lastMessage: "Le paiement est passé ✓", time: "11:15", unread: 0, online: true, vip: false, avatar: "ON" },
+   240→   329→  { id: "W-5", name: "Awa Diallo", lastMessage: "Quels sont vos produits bio ?", time: "10:30", unread: 1, online: false, vip: false, avatar: "AD" },
+   241→   330→];
+   242→   331→
+   243→   332→export type ChatMessage = {
+   244→   333→  id: string;
+   245→   334→  sender: "boutique" | "client";
+   246→   335→  text: string;
+   247→   336→  time: string;
+   248→   337→  iaSuggestion?: string;
+   249→   338→};
+   250→   339→
+   251→   340→export const CHAT_MESSAGES: ChatMessage[] = [
+   252→   341→  { id: "M1", sender: "client", text: "Bonjour, j'ai vu votre sac en cuir Faso Dan Fani, est-il encore disponible ?", time: "14:28" },
+   253→   342→  { id: "M2", sender: "boutique", text: "Bonjour Mariam ! Oui, il est disponible 🙏 Il est fait main à Ouagadougou, cuir véritable. Prix : 28 000 FCFA. Souhaitez-vous commander ?", time: "14:30" },
+   254→   343→  { id: "M3", sender: "client", text: "Super ! Vous livrez à Dakar ? Et le paiement par Wave c'est possible ?", time: "14:31" },
+   255→   344→  {
+   256→   345→    id: "M4",
+   257→   346→    sender: "boutique",
+   258→   347→    text: "Oui, nous livrons à Dakar en 24h via Yango 🚚 Paiement Wave accepté ! Frais de livraison : 2 500 FCFA. Total : 30 500 FCFA. Je vous envoie le lien de paiement ?",
+   259→   348→    time: "14:32",
+   260→   349→    iaSuggestion: "Astuce IA : Proposez un code promo de 5% pour les nouveaux clients VIP afin d'augmenter la conversion (+18% observé sur ce segment).",
+   261→   350→  },
+   262→   351→];
+   263→   352→
+   264→   353→export const WHATSAPP_CATALOG = [
+   265→   354→  { emoji: "🧥", name: "Boubou Royal", category: "Mode", price: 45000, stock: 24 },
+   266→   355→  { emoji: "👗", name: "Pagne Wax Premium", category: "Mode", price: 18000, stock: 89 },
+   267→   356→  { emoji: "👶", name: "Tenue Enfant Brodée", category: "Mode", price: 15000, stock: 12 },
+   268→   357→  { emoji: "👞", name: "Mocassins Cuir", category: "Mode", price: 32000, stock: 8 },
+   269→   358→  { emoji: "👜", name: "Sac Faso Dan Fani", category: "Artisanat", price: 28000, stock: 8 },
+   270→   359→  { emoji: "🎭", name: "Masque Traditionnel", category: "Artisanat", price: 55000, stock: 4 },
+   271→   360→];
+   272→   361→
+   273→   362→export const AUTO_REPLIES = [
+   274→   363→  { trigger: "bonjour", match: "contient", reply: "Bonjour 👋 Bienvenue chez YAA Boutique ! Comment puis-je vous aider aujourd'hui ? Vous pouvez consulter notre catalogue en tapant CATALOGUE." },
+   275→   364→  { trigger: "prix", match: "contient", reply: "Voici nos meilleurs prix du moment ! Tous nos produits sont affichés en FCFA. Paiement Wave, Orange Money, MTN MoMo acceptés. Tapez COMMANDE pour commander." },
+   276→   365→  { trigger: "livraison", match: "contient", reply: "🚚 Nous livrons à Abidjan en 2h, partout en Côte d'Ivoire en 24h. Frais calculés automatiquement. Suivi en temps réel inclus !" },
+   277→   366→  { trigger: "paiement", match: "contient", reply: "💳 Nous acceptons Wave, Orange Money, MTN MoMo, Moov Money et cartes bancaires. Paiement 100% sécurisé via YAA." },
+   278→   367→  { trigger: "catalogue", match: "exact", reply: "Voici notre catalogue complet 📚 [Lien catalogue]. Dites-moi quel produit vous intéresse !" },
+   279→   368→  { trigger: "merci", match: "contient", reply: "Avec plaisir 🙏 N'hésitez pas si vous avez d'autres questions. Merci pour votre confiance !" },
+   280→   369→];
+   281→   370→
+   282→   371→export const WHATSAPP_CAMPAIGNS = [
+   283→   372→  { name: "Promo Tabaski 2026", status: "Active", sent: 1247, delivered: 1198, opened: 856, clicked: 412, revenue: 458000 },
+   284→   373→  { name: "Nouveautés Mode", status: "Active", sent: 892, delivered: 856, opened: 612, clicked: 287, revenue: 234000 },
+   285→   374→  { name: "Braderie Beauté", status: "Terminée", sent: 1567, delivered: 1502, opened: 987, clicked: 445, revenue: 567000 },
+   286→   375→];
+   287→   376→
+   288→   377→// ---------- DELIVERY ----------
+   289→   378→export const DELIVERY_STATS = [
+   290→   379→  { label: "En transit", value: 23, color: "orange" as const, icon: "Truck" },
+   291→   380→  { label: "Livrées", value: 135, color: "green" as const, icon: "CheckCircle2" },
+   292→   381→  { label: "Délai moyen", value: 3.2, suffix: " jours", color: "blue" as const, icon: "Clock" },
+   293→   382→  { label: "Taux livraison", value: 97.8, format: "percent", color: "emerald" as const, icon: "TrendingUp" },
+   294→   383→];
+   295→   384→
+   296→   385→export type Shipment = {
+   297→   386→  id: string;
+   298→   387→  customer: string;
+   299→   388→  from: string;
+   300→   389→  to: string;
+   301→   390→  carrier: "Yango" | "DHL" | "Coursier Local" | "FedEx";
+   302→   391→  tracking: string;
+   303→   392→  status: "En transit" | "Livré" | "En préparation" | "Retourné";
+   304→   393→  eta: string;
+   305→   394→  fee: number;
+   306→   395→};
+   307→   396→
+   308→   397→export const SHIPMENTS: Shipment[] = [
+   309→   398→  { id: "SHP-9821", customer: "Mariam Sow", from: "Abidjan", to: "Dakar", carrier: "Yango", tracking: "YNG-784512", status: "En transit", eta: "Demain 12h", fee: 3500 },
+   310→   399→  { id: "SHP-9820", customer: "Sékou Traoré", from: "Abidjan", to: "Bamako", carrier: "DHL", tracking: "DHL-452139", status: "En transit", eta: "26 Jun 18h", fee: 8500 },
+   311→   400→  { id: "SHP-9819", customer: "Grace Adeyemi", from: "Abidjan", to: "Lagos", carrier: "FedEx", tracking: "FDX-321654", status: "En préparation", eta: "27 Jun 14h", fee: 12000 },
+   312→   401→  { id: "SHP-9818", customer: "Kwame Mensah", from: "Abidjan", to: "Accra", carrier: "Yango", tracking: "YNG-451998", status: "Livré", eta: "Livré 23 Jun", fee: 2500 },
+   313→   402→  { id: "SHP-9817", customer: "Fatou Diop", from: "Abidjan", to: "Dakar", carrier: "DHL", tracking: "DHL-784012", status: "Livré", eta: "Livré 22 Jun", fee: 7500 },
+   314→   403→  { id: "SHP-9816", customer: "Ibrahim Koné", from: "Abidjan", to: "Bamako", carrier: "Coursier Local", tracking: "CSL-110892", status: "Retourné", eta: "N/A", fee: 5000 },
+   315→   404→];
+   316→   405→
+   317→   406→export const CARRIERS = [
+   318→   407→  { name: "Yango", color: "#E11D48", coverage: "Abidjan, Dakar, Accra, Lagos", deliveries: 487, rating: 4.8, delay: "2h - 24h", price: "1 500 - 5 000 FCFA" },
+   319→   408→  { name: "DHL", color: "#D40511", coverage: "International + grandes villes", deliveries: 234, rating: 4.9, delay: "24h - 72h", price: "5 000 - 25 000 FCFA" },
+   320→   409→  { name: "Coursier Local", color: "#0F8A5F", coverage: "Intérieur Côte d'Ivoire", deliveries: 312, rating: 4.6, delay: "24h - 72h", price: "2 000 - 8 000 FCFA" },
+   321→   410→  { name: "FedEx", color: "#7D2C8C", coverage: "International express", deliveries: 89, rating: 4.7, delay: "48h - 96h", price: "8 000 - 30 000 FCFA" },
+   322→   411→];
+   323→   412→
+   324→   413→export const DELIVERY_CITIES_LIST = [
+   325→   414→  "Abidjan", "Yamoussoukro", "Bouaké", "San-Pédro", "Daloa", "Korhogo", "Man", "Dakar", "Bamako", "Accra", "Lagos", "Cotonou",
+   326→   415→];
+   327→   416→
+   328→   417→export const CARRIER_BADGES = {
+   329→   418→  Yango: { bg: "bg-rose-100 dark:bg-rose-950/50", text: "text-rose-700 dark:text-rose-300" },
+   330→   419→  DHL: { bg: "bg-red-100 dark:bg-red-950/50", text: "text-red-700 dark:text-red-300" },
+   331→   420→  "Coursier Local": { bg: "bg-yaa-green-100 dark:bg-yaa-green-950/50", text: "text-yaa-green-700 dark:text-yaa-green-300" },
+   332→   421→  FedEx: { bg: "bg-purple-100 dark:bg-purple-950/50", text: "text-purple-700 dark:text-purple-300" },
+   333→   422→};
+   334→   423→
+   335→   424→// ---------- MARKETING ----------
+   336→   425→export const MARKETING_CHANNELS = [
+   337→   426→  { name: "Email", icon: "Mail", sent: 1247, opened: 856, color: "blue", rate: 68.6 },
+   338→   427→  { name: "SMS", icon: "Smartphone", sent: 892, opened: 745, color: "green", rate: 83.5 },
+   339→   428→  { name: "WhatsApp", icon: "MessageCircle", sent: 1567, opened: 1198, color: "emerald", rate: 76.5 },
+   340→   429→  { name: "Push", icon: "Bell", sent: 678, opened: 312, color: "orange", rate: 46.0 },
+   341→   430→];
+   342→   431→
+   343→   432→export const MARKETING_CAMPAIGNS = [
+   344→   433→  { name: "Promo Tabaski 2026", channel: "WhatsApp", status: "Active", sent: 1247, opened: 856, clicked: 412, revenue: 458000 },
+   345→   434→  { name: "Braderie Beauté", channel: "SMS", status: "Active", sent: 892, opened: 745, clicked: 312, revenue: 234000 },
+   346→   435→  { name: "Nouveautés Mode", channel: "Email", status: "Active", sent: 1567, opened: 1198, clicked: 567, revenue: 567000 },
+   347→   436→  { name: "Black Friday", channel: "Push", status: "Planifiée", sent: 0, opened: 0, clicked: 0, revenue: 0 },
+   348→   437→  { name: "Anniversaire Client", channel: "WhatsApp", status: "Active", sent: 234, opened: 198, clicked: 89, revenue: 124000 },
+   349→   438→  { name: "Soldes Hiver", channel: "SMS", status: "Terminée", sent: 678, opened: 567, clicked: 234, revenue: 345000 },
+   350→   439→];
+   351→   440→
+   352→   441→export const MARKETING_SEGMENTS = [
+   353→   442→  { emoji: "👑", name: "VIP Premium", description: "Clients ayant dépensé > 200 000 FCFA", clients: 186, revenue: 4250000, growth: "+24%" },
+   354→   443→  { emoji: "🛒", name: "Acheteurs Récurrents", description: "Plus de 3 commandes sur 90 jours", clients: 342, revenue: 2840000, growth: "+18%" },
+   355→   444→  { emoji: "🌟", name: "Nouveaux Clients", description: "Première commande < 30 jours", clients: 218, revenue: 1240000, growth: "+45%" },
+   356→   445→  { emoji: "💤", name: "Inactifs", description: "Aucune commande depuis 60 jours", clients: 287, revenue: 0, growth: "-12%" },
+   357→   446→  { emoji: "🔄", name: "Paniers Abandonnés", description: "Panier non finalisé < 7 jours", clients: 124, revenue: 890000, growth: "+8%" },
+   358→   447→  { emoji: "💬", name: "Engagés WhatsApp", description: "Conversations actives < 7 jours", clients: 412, revenue: 1567000, growth: "+32%" },
+   359→   448→];
+   360→   449→
+   361→   450→export const AUTOMATIONS = [
+   362→   451→  { name: "Bienvenue nouveau client", trigger: "nouveau_client", action: "Email de bienvenue + code promo -10%", executions: 218, active: true },
+   363→   452→  { name: "Panier abandonné", trigger: "panier_abandonne", action: "WhatsApp relance + lien direct", executions: 124, active: true },
+   364→   453→  { name: "Anniversaire client", trigger: "anniversaire", action: "Email personnalisé + offre spéciale", executions: 47, active: true },
+   365→   454→  { name: "Recommandation IA", trigger: "commande_livree", action: "Suggestion produits similaires", executions: 312, active: true },
+   366→   455→  { name: "Réactivation inactifs", trigger: "inactif_60j", action: "SMS promo réactivation", executions: 89, active: false },
+   367→   456→];
+   368→   457→
+   369→   458→// ---------- YAAMIND ----------
+   370→   459→export const YAAMIND_MODELS = [
+   371→   460→  { id: "gpt-4o", name: "GPT-4o", icon: "OpenAI" },
+   372→   461→  { id: "claude-3-5", name: "Claude 3.5 Sonnet", icon: "Anthropic" },
+   373→   462→  { id: "gemini-pro", name: "Gemini Pro", icon: "Google" },
+   374→   463→  { id: "deepseek-v3", name: "DeepSeek V3", icon: "DeepSeek" },
+   375→   464→];
+   376→   465→
+   377→   466→export const YAAMIND_QUICK_ACTIONS = [
+   378→   467→  { label: "Générer réponse client", icon: "MessageSquareReply", color: "green" },
+   379→   468→  { label: "Idées produits", icon: "Lightbulb", color: "orange" },
+   380→   469→  { label: "Analyser performances", icon: "TrendingUp", color: "blue" },
+   381→   470→  { label: "Générer code promo", icon: "Ticket", color: "purple" },
+   382→   471→  { label: "Optimiser SEO", icon: "Search", color: "emerald" },
+   383→   472→  { label: "Auto-réponse WhatsApp", icon: "MessageCircle", color: "orange" },
+   384→   473→];
+   385→   474→
+   386→   475→export const YAAMIND_CHAT = [
+   387→   476→  { id: "1", sender: "user" as const, text: "Aide-moi à rédiger une description SEO pour mon sac en cuir Faso Dan Fani.", time: "14:20" },
+   388→   477→  {
+   389→   478→    id: "2",
+   390→   479→    sender: "assistant" as const,
+   391→   480→    text: "Avec plaisir ! Voici une description optimisée SEO pour votre **Sac en cuir Faso Dan Fani** :\n\n**Sac à main artisanal Faso Dan Fani — Cuir véritable fait main**\n\nÉlégant sac à main en cuir véritable, fabriqué artisanalement au Burkina Faso. Motif traditionnel Faso Dan Fani tissé à la main, finitions soignées. Sac unique, parfait pour toutes vos occasions.\n\n**Caractéristiques :**\n• Cuir véritable pleine fleur\n• Motif Faso Dan Fani traditionnel\n• Fermeture éclair sécurisée\n• Bandoulière ajustable\n• Dimensions : 28 × 22 × 10 cm\n\n**Mots-clés SEO :** sac cuir africain, sac fait main, Faso Dan Fani, sac artisanal, maroquinerie africaine, sac ethnique.",
+   392→   481→    time: "14:20",
+   393→   482→  },
+   394→   483→  {
+   395→   484→    id: "3",
+   396→   485→    sender: "assistant" as const,
+   397→   486→    text: "",
+   398→   487→    time: "14:21",
+   399→   488→    iaSuggestion: "Voulez-vous que j'ajoute des hashtags Instagram et un script de post WhatsApp pour promouvoir ce produit ?",
+   400→   489→  },
+   401→   490→  { id: "4", sender: "user" as const, text: "Oui, génère aussi une campagne SMS.", time: "14:22" },
+   402→   491→  {
+   403→   492→    id: "5",
+   404→   493→    sender: "assistant" as const,
+   405→   494→    text: "Parfait ! Voici votre pack marketing complet :\n\n**📱 Hashtags Instagram :**\n#SacCuirAfricain #FasoDanFani #FaitMain #MaroquinerieAfricaine #ArtisanatBurkinabe #ModeAfricaine #SacArtisanal\n\n**💬 Script WhatsApp :**\n« 🛍️ NOUVEAUTÉ ! Sac en cuir Faso Dan Fani fait main ✨\n\n🎨 Motif traditionnel tissé à la main\n🐄 Cuir véritable pleine fleur\n📦 Livraison 24h Abidjan\n💳 Wave, Orange Money, MTN acceptés\n\nPrix : 28 000 FCFA\n👉 Commandez : [lien] »\n\n**📲 Campagne SMS :**\n« YAA Boutique : Découvrez notre nouveau sac Faso Dan Fani en cuir véritable ! 28 000 FCFA. Livraison 24h. Commandez : [lien] STOP=desabo »",
+   406→   495→    time: "14:22",
+   407→   496→  },
+   408→   497→];
+   409→   498→
+   410→   499→// ---------- ANALYTICS ----------
+   411→
+   412→[showing lines 90-499 of 660; use offset=500 with limit to continue reading]

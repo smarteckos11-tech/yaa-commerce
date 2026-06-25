@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Filter, Plus, Search, MapPin, MessageCircle, Eye } from "lucide-react";
+import { Filter, Plus, Search, MapPin, MessageCircle, Eye, Banknote } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,10 +106,23 @@ export default function CommandesPage() {
                         <p className="text-[11px] text-muted-foreground line-clamp-2 mb-2">{order.items}</p>
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-bold">{formatFCFA(order.amount)}</p>
-                          <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded", pay.bg, pay.text)}>
-                            {order.payment}
+                          <span
+                            className={cn(
+                              "text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-0.5",
+                              pay.bg,
+                              pay.text
+                            )}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: pay.dot }} />
+                            {order.payment === "Paiement à la livraison" ? "COD" : order.payment}
                           </span>
                         </div>
+                        {order.payment === "Paiement à la livraison" && (
+                          <div className="mb-2 px-2 py-1 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 text-[10px] text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                            <Banknote className="w-3 h-3" />
+                            {order.status === "Livré" ? "Cash collecté ✓" : order.status === "Expédié" ? "À collecter à la livraison" : "À collecter"}
+                          </div>
+                        )}
                         <div className="flex items-center justify-between pt-2 border-t">
                           <p className="text-[10px] font-mono text-muted-foreground">{order.id}</p>
                           <p className="text-[10px] text-muted-foreground">{order.time}</p>

@@ -89,6 +89,7 @@ export default function LivraisonsPage() {
                       <th className="text-left font-medium text-muted-foreground px-3 py-2.5 hidden lg:table-cell">Suivi</th>
                       <th className="text-center font-medium text-muted-foreground px-3 py-2.5">Statut</th>
                       <th className="text-right font-medium text-muted-foreground px-3 py-2.5 hidden sm:table-cell">ETA</th>
+                      <th className="text-right font-medium text-muted-foreground px-3 py-2.5 hidden md:table-cell">COD</th>
                       <th className="text-right font-medium text-muted-foreground px-3 py-2.5">Frais</th>
                     </tr>
                   </thead>
@@ -120,6 +121,34 @@ export default function LivraisonsPage() {
                           <span className={cn("inline-block text-xs font-semibold px-2 py-0.5 rounded", SHIPMENT_STATUS[s.status])}>{s.status}</span>
                         </td>
                         <td className="px-3 py-3 text-right text-xs text-muted-foreground hidden sm:table-cell">{s.eta}</td>
+                        <td className="px-3 py-3 text-right hidden md:table-cell">
+                          {s.codAmount ? (
+                            <div className="flex flex-col items-end">
+                              <span className={cn(
+                                "text-xs font-bold",
+                                s.codStatus === "a_collecter" && "text-amber-600",
+                                s.codStatus === "collecte" && "text-yaa-green-600",
+                                s.codStatus === "non_collecte" && "text-rose-600",
+                                s.codStatus === "reconcilie" && "text-sky-600",
+                              )}>
+                                {formatFCFA(s.codAmount)}
+                              </span>
+                              <span className="text-[9px] text-muted-foreground">
+                                {s.codStatus === "a_collecter" && "À collecter"}
+                                {s.codStatus === "collecte" && "Collecté ✓"}
+                                {s.codStatus === "non_collecte" && "Refusé ✗"}
+                                {s.codStatus === "reconcilie" && "Réconcilié"}
+                              </span>
+                              {(s.codStatus === "a_collecter" || s.codStatus === "collecte") && (
+                                <button className="mt-1 text-[9px] font-bold text-yaa-green-600 hover:underline">
+                                  {s.codStatus === "a_collecter" ? "Confirmer encaissement" : "Réconcilier"}
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
                         <td className="px-3 py-3 text-right font-semibold text-yaa-green-600">{formatFCFA(s.fee)}</td>
                       </motion.tr>
                     ))}

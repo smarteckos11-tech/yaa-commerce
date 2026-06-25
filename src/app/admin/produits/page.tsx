@@ -6,6 +6,7 @@ import { Upload, Download, Plus, Sparkles, Search, MoreHorizontal, Eye, Pencil, 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Select,
@@ -21,6 +22,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { StatCard, PageHeader } from "@/components/admin/ui-bits";
 import { PRODUCTS, PRODUCT_STATS, PRODUCT_CATEGORIES, CATEGORY_COLORS, formatFCFA } from "@/lib/admin-data";
 import { cn } from "@/lib/utils";
@@ -30,13 +40,23 @@ const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transiti
 
 export default function ProduitsPage() {
   const [tab, setTab] = React.useState("tous");
+  const [search, setSearch] = React.useState("");
+  const [category, setCategory] = React.useState("all");
+  const [showAddModal, setShowAddModal] = React.useState(false);
+  const { toast } = useToast();
 
   const filtered = React.useMemo(() => {
-    if (tab === "physiques") return PRODUCTS.filter((p) => p.type === "physique");
-    if (tab === "numeriques") return PRODUCTS.filter((p) => p.type === "digital");
-    if (tab === "stock-faible") return PRODUCTS.filter((p) => p.stock !== null && p.stock <= 10);
-    return PRODUCTS;
-  }, [tab]);
+    let list = PRODUCTS;
+    if (tab === "physiques") list = list.filter((p) => p.type === "physique");
+    if (tab === "numeriques") list = list.filter((p) => p.type === "digital");
+    if (tab === "stock-faible") list = list.filter((p) => p.stock !== null && p.stock <= 10);
+    if (category !== "all") list = list.filter((p) => p.category.toLowerCase() === category);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
+    }
+    return list;
+  }, [tab, category, search]);
 
   return (
     <motion.div variants={container} initial="hidden" animate="show">
@@ -47,7 +67,13 @@ export default function ProduitsPage() {
           <>
             <Button variant="outline" size="sm" className="gap-1.5"><Upload className="h-4 w-4" /> Import CSV</Button>
             <Button variant="outline" size="sm" className="gap-1.5"><Download className="h-4 w-4" /> Exporter</Button>
-            <Button size="sm" className="gap-1.5 bg-yaa-green-500 hover:bg-yaa-green-600"><Plus className="h-4 w-4" /> Ajouter un produit</Button>
+            <Button
+              size="sm"
+              className="gap-1.5 bg-yaa-green-500 hover:bg-yaa-green-600"
+              onClick={() => setShowAddModal(true)}
+            >
+              <Plus className="h-4 w-4" /> Ajouter un produit
+            </Button>
           </>
         }
       />
@@ -63,14 +89,20 @@ export default function ProduitsPage() {
           <div className="flex flex-col lg:flex-row gap-2 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Rechercher un produit..." className="pl-9" />
+              <Input
+                placeholder="Rechercher un produit..."
+                className="pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
-            <Select defaultValue="all">
+            <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="w-full lg:w-48"><SelectValue placeholder="Catégorie" /></SelectTrigger>
               <SelectContent>
-                {PRODUCT_CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c.toLowerCase().replace(/\s/g, "-")}>{c}</SelectItem>
-                ))}
+                {PRODUCT_CATEGORIES.map((c) => {
+                  const v = c === "Toutes" ? "all" : c.toLowerCase().replace(/\s/g, "-");
+                  return <SelectItem key={c} value={v}>{c}</SelectItem>;
+                })}
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" className="gap-1.5 border-yaa-orange-300 text-yaa-orange-600 hover:bg-yaa-orange-50">
@@ -172,6 +204,73 @@ export default function ProduitsPage() {
           </Tabs>
         </Card>
       </motion.div>
+
+      {/* Modal: Ajouter un produit */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Ajouter un produit</DialogTitle>
+            <DialogDescription>
+              Créez un nouveau produit dans votre catalogue. Tous les champs sont requis.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setShowAddModal(false);
+              toast({
+                title: "Produit créé !",
+                description: "Votre produit a été ajouté au catalogue.",
+              });
+            }}
+            className="space-y-3"
+          >
+            <div>
+              <Label htmlFor="p-name" className="text-xs font-semibold">Nom du produit</Label>
+              <Input id="p-name" placeholder="Ex: Sac en cuir premium" required className="mt-1" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="p-sku" className="text-xs font-semibold">SKU</Label>
+                <Input id="p-sku" placeholder="MOD-SC-011" required className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Catégorie</Label>
+                <Select defaultValue="mode">
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PRODUCT_CATEGORIES.filter((c) => c !== "Toutes").map((c) => (
+                      <SelectItem key={c} value={c.toLowerCase().replace(/\s/g, "-")}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="p-price" className="text-xs font-semibold">Prix (FCFA)</Label>
+                <Input id="p-price" type="number" min="0" placeholder="25000" required className="mt-1" />
+              </div>
+              <div>
+                <Label htmlFor="p-stock" className="text-xs font-semibold">Stock</Label>
+                <Input id="p-stock" type="number" min="0" placeholder="50" className="mt-1" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200">
+              <Sparkles className="w-4 h-4 text-yaa-orange-500 flex-shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                <span className="font-semibold text-yaa-green-700">Astuce IA :</span> La description SEO sera générée automatiquement par YaaMind à la création.
+              </p>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowAddModal(false)}>Annuler</Button>
+              <Button type="submit" className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5">
+                <Plus className="h-4 w-4" /> Créer le produit
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

@@ -61,8 +61,8 @@ export const NAV_GROUPS: NavGroup[] = [
 export const DASHBOARD_STATS = [
   { label: "Revenus du jour", value: 2450000, format: "fcfa", delta: "+16.8%", trend: "up" as const, color: "green" as const, icon: "Wallet" },
   { label: "Commandes", value: 128, format: "number", delta: "+12.5%", trend: "up" as const, color: "orange" as const, icon: "ShoppingCart" },
+  { label: "COD à encaisser", value: 214000, format: "fcfa", delta: "3 en attente", trend: "up" as const, color: "rose" as const, icon: "Banknote" },
   { label: "Clients actifs", value: 356, format: "number", delta: "+15.7%", trend: "up" as const, color: "blue" as const, icon: "Users" },
-  { label: "Produits en stock", value: 89, format: "number", delta: "+4.2%", trend: "up" as const, color: "purple" as const, icon: "Package" },
 ];
 
 export const RECENT_ORDERS = [
@@ -122,7 +122,7 @@ export const CATEGORY_COLORS: Record<Product["category"], { bg: string; text: st
 
 // ---------- ORDERS (KANBAN) ----------
 export type OrderStatus = "Nouveau" | "En préparation" | "Expédié" | "Livré" | "Annulé";
-export type PaymentMethod = "Wave" | "Orange Money" | "MTN MoMo" | "Moov" | "Carte bancaire";
+export type PaymentMethod = "Wave" | "Orange Money" | "MTN MoMo" | "Moov" | "Carte bancaire" | "Paiement à la livraison";
 
 export const PAYMENT_COLORS: Record<PaymentMethod, { bg: string; text: string; dot: string }> = {
   "Wave": { bg: "bg-sky-100 dark:bg-sky-950/50", text: "text-sky-700 dark:text-sky-300", dot: "#1DC7EA" },
@@ -130,6 +130,7 @@ export const PAYMENT_COLORS: Record<PaymentMethod, { bg: string; text: string; d
   "MTN MoMo": { bg: "bg-yellow-100 dark:bg-yellow-950/50", text: "text-yellow-700 dark:text-yellow-300", dot: "#FFCC00" },
   "Moov": { bg: "bg-blue-100 dark:bg-blue-950/50", text: "text-blue-700 dark:text-blue-300", dot: "#00A0E3" },
   "Carte bancaire": { bg: "bg-purple-100 dark:bg-purple-950/50", text: "text-purple-700 dark:text-purple-300", dot: "#8B5CF6" },
+  "Paiement à la livraison": { bg: "bg-yaa-green-100 dark:bg-yaa-green-950/50", text: "text-yaa-green-700 dark:text-yaa-green-300", dot: "#0F8A5F" },
 };
 
 export const ORDER_STATUS_COLORS: Record<OrderStatus, { border: string; bg: string; text: string; dot: string }> = {
@@ -157,9 +158,9 @@ export const KANBAN_COLUMNS: { status: OrderStatus; orders: Order[] }[] = [
     status: "Nouveau",
     orders: [
       { id: "CMD-2842", customer: "Mariam Sow", city: "Dakar", country: "Sénégal", items: "Sac cuir Faso Dan Fani ×1, Café Arabica ×2", amount: 52000, payment: "Wave", time: "Il y a 12 min", avatar: "MS" },
-      { id: "CMD-2843", customer: "Sékou Traoré", city: "Bamako", country: "Mali", items: "Boubou royal brodé ×1", amount: 45000, payment: "Orange Money", time: "Il y a 25 min", avatar: "ST" },
+      { id: "CMD-2843", customer: "Sékou Traoré", city: "Bamako", country: "Mali", items: "Boubou royal brodé ×1", amount: 45000, payment: "Paiement à la livraison", time: "Il y a 25 min", avatar: "ST" },
       { id: "CMD-2844", customer: "Grace Adeyemi", city: "Lagos", country: "Nigeria", items: "Beurre karité ×3, Savon noir ×5", amount: 48000, payment: "MTN MoMo", time: "Il y a 38 min", avatar: "GA" },
-      { id: "CMD-2845", customer: "Omar Ndiaye", city: "Abidjan", country: "Côte d'Ivoire", items: "Formation E-commerce Africa", amount: 75000, payment: "Wave", time: "Il y a 52 min", avatar: "ON" },
+      { id: "CMD-2845", customer: "Omar Ndiaye", city: "Abidjan", country: "Côte d'Ivoire", items: "Formation E-commerce Africa", amount: 75000, payment: "Paiement à la livraison", time: "Il y a 52 min", avatar: "ON" },
     ],
   },
   {
@@ -167,7 +168,7 @@ export const KANBAN_COLUMNS: { status: OrderStatus; orders: Order[] }[] = [
     orders: [
       { id: "CMD-2838", customer: "Kwame Mensah", city: "Accra", country: "Ghana", items: "Djembe professionnel ×1, Pagne wax ×2", amount: 101000, payment: "Carte bancaire", time: "Il y a 2h", avatar: "KM" },
       { id: "CMD-2839", customer: "Fatou Diop", city: "Dakar", country: "Sénégal", items: "Tabouret sculpté ×1", amount: 38000, payment: "Orange Money", time: "Il y a 3h", avatar: "FD" },
-      { id: "CMD-2840", customer: "Ibrahim Koné", city: "Bamako", country: "Mali", items: "Café Arabica ×5, Beurre karité ×4", amount: 94000, payment: "Moov", time: "Il y a 4h", avatar: "IK" },
+      { id: "CMD-2840", customer: "Ibrahim Koné", city: "Bamako", country: "Mali", items: "Café Arabica ×5, Beurre karité ×4", amount: 94000, payment: "Paiement à la livraison", time: "Il y a 4h", avatar: "IK" },
     ],
   },
   {
@@ -182,7 +183,7 @@ export const KANBAN_COLUMNS: { status: OrderStatus; orders: Order[] }[] = [
     orders: [
       { id: "CMD-2831", customer: "Aminata Touré", city: "Abidjan", country: "Côte d'Ivoire", items: "Sac cuir ×1, Beurre karité ×2", amount: 45000, payment: "Orange Money", time: "Hier 14:20", avatar: "AT" },
       { id: "CMD-2832", customer: "Boubacar Sy", city: "Dakar", country: "Sénégal", items: "Boubou royal ×2", amount: 90000, payment: "Wave", time: "Hier 11:00", avatar: "BS" },
-      { id: "CMD-2833", customer: "Linda Mbeki", city: "Accra", country: "Ghana", items: "Savon noir ×10, Beurre karité ×5", amount: 67500, payment: "Carte bancaire", time: "Lun 18:45", avatar: "LM" },
+      { id: "CMD-2833", customer: "Linda Mbeki", city: "Accra", country: "Ghana", items: "Savon noir ×10, Beurre karité ×5", amount: 67500, payment: "Paiement à la livraison", time: "Lun 18:45", avatar: "LM" },
       { id: "CMD-2834", customer: "Moussa Camara", city: "Conakry", country: "Guinée", items: "Djembe pro ×1, Tabouret sculpté ×1", amount: 103000, payment: "Orange Money", time: "Lun 15:30", avatar: "MC" },
     ],
   },
@@ -193,6 +194,38 @@ export const KANBAN_COLUMNS: { status: OrderStatus; orders: Order[] }[] = [
     ],
   },
 ];
+
+// COD (Cash on Delivery) — orders awaiting cash collection by delivery drivers
+export type CodStatus = "a_collecter" | "collecte" | "non_collecte" | "reconcilie";
+
+export type CodOrder = {
+  orderId: string;
+  customer: string;
+  city: string;
+  carrier: string;
+  amountToCollect: number;
+  status: CodStatus;
+  collectedAt?: string;
+  collectedBy?: string;
+  discrepancy?: number; // écart collecté vs attendu
+};
+
+export const COD_ORDERS: CodOrder[] = [
+  { orderId: "CMD-2843", customer: "Sékou Traoré", city: "Bamako", carrier: "Coursier Local", amountToCollect: 45000, status: "a_collecter" },
+  { orderId: "CMD-2845", customer: "Omar Ndiaye", city: "Abidjan", carrier: "Yango", amountToCollect: 75000, status: "a_collecter" },
+  { orderId: "CMD-2840", customer: "Ibrahim Koné", city: "Bamako", carrier: "DHL", amountToCollect: 94000, status: "a_collecter" },
+  { orderId: "CMD-2833", customer: "Linda Mbeki", city: "Accra", carrier: "Yango", amountToCollect: 67500, status: "collecte", collectedAt: "24 Jun 14:32", collectedBy: "Moussa K. (Yango)", discrepancy: 0 },
+  { orderId: "CMD-2826", customer: "Awa Bello", city: "Cotonou", carrier: "Coursier Local", amountToCollect: 32000, status: "non_collecte", collectedAt: "23 Jun 17:20", collectedBy: "Ibrahim S. (Coursier)", discrepancy: 32000 },
+  { orderId: "CMD-2822", customer: "Koffi Amani", city: "Abidjan", carrier: "Yango", amountToCollect: 58000, status: "reconcilie", collectedAt: "22 Jun 11:00", collectedBy: "Yao D. (Yango)", discrepancy: 0 },
+];
+
+export const COD_STATS = {
+  totalToCollect: 214000,        // somme à collecter (a_collecter)
+  totalCollected: 125500,        // somme collectée (collecte)
+  totalDiscrepancy: 32000,       // écart total
+  totalReconciled: 58000,        // réconcilié en banque
+  pendingOrders: 3,              // commandes en attente de collecte
+};
 
 export const ORDER_SUMMARY = [
   { status: "Nouveau" as const, count: 4, total: 220000, color: "blue" },
@@ -266,7 +299,7 @@ export const PROVIDERS: Provider[] = [
   { name: "MTN MoMo", type: "Mobile Money", country: "Ghana, Côte d'Ivoire", connected: true, balance: 890000, transactions: 312, color: "#FFCC00", initials: "MTN" },
   { name: "Moov Money", type: "Mobile Money", country: "Bénin, Burkina", connected: true, balance: 425000, transactions: 198, color: "#00A0E3", initials: "MV" },
   { name: "CinetPay", type: "Agrégateur", country: "Afrique de l'Ouest", connected: true, balance: 320000, transactions: 156, color: "#1B4D8C", initials: "CP" },
-  { name: "Flutterwave", type: "Agrégateur", country: "Pan-africain", connected: true, balance: 100000, transactions: 152, color: "#F5A623", initials: "FW" },
+  { name: "Paiement à la livraison", type: "Cash (COD)", country: "Toute l'Afrique", connected: true, balance: 845000, transactions: 312, color: "#0F8A5F", initials: "COD" },
   { name: "PayDunya", type: "Agrégateur", country: "Sénégal", connected: false, color: "#1B9E77", initials: "PD" },
   { name: "Stripe", type: "Carte bancaire", country: "International", connected: false, color: "#635BFF", initials: "S" },
   { name: "PayPal", type: "Portefeuille", country: "International", connected: false, color: "#0070BA", initials: "PP" },
@@ -285,7 +318,7 @@ export type Transaction = {
   provider: PaymentMethod;
   amount: number;
   reference: string;
-  status: "Réussi" | "En attente" | "Échecé";
+  status: "Réussi" | "En attente" | "Échec";
   date: string;
 };
 
@@ -298,7 +331,7 @@ export const TRANSACTIONS: Transaction[] = [
   { id: "TX-9816", client: "Kwame Mensah", provider: "Carte bancaire", amount: 101000, reference: "CB-998471", status: "Réussi", date: "24 Jun 2026, 12:45" },
   { id: "TX-9815", client: "Fatou Diop", provider: "Orange Money", amount: 38000, reference: "OM-784012", status: "Réussi", date: "24 Jun 2026, 11:30" },
   { id: "TX-9814", client: "Ibrahim Koné", provider: "Moov", amount: 94000, reference: "MV-110892", status: "Réussi", date: "24 Jun 2026, 10:15" },
-  { id: "TX-9813", client: "Awa Diallo", provider: "Moov", amount: 75000, reference: "MV-110754", status: "Échecé", date: "24 Jun 2026, 09:45" },
+  { id: "TX-9813", client: "Awa Diallo", provider: "Moov", amount: 75000, reference: "MV-110754", status: "Échec", date: "24 Jun 2026, 09:45" },
   { id: "TX-9812", client: "Aïcha Bello", provider: "MTN MoMo", amount: 54000, reference: "MTN-321001", status: "Réussi", date: "24 Jun 2026, 09:20" },
 ];
 
@@ -392,15 +425,17 @@ export type Shipment = {
   status: "En transit" | "Livré" | "En préparation" | "Retourné";
   eta: string;
   fee: number;
+  codAmount?: number;       // montant cash à collecter (si COD)
+  codStatus?: CodStatus;    // statut COD
 };
 
 export const SHIPMENTS: Shipment[] = [
   { id: "SHP-9821", customer: "Mariam Sow", from: "Abidjan", to: "Dakar", carrier: "Yango", tracking: "YNG-784512", status: "En transit", eta: "Demain 12h", fee: 3500 },
-  { id: "SHP-9820", customer: "Sékou Traoré", from: "Abidjan", to: "Bamako", carrier: "DHL", tracking: "DHL-452139", status: "En transit", eta: "26 Jun 18h", fee: 8500 },
+  { id: "SHP-9820", customer: "Sékou Traoré", from: "Abidjan", to: "Bamako", carrier: "DHL", tracking: "DHL-452139", status: "En transit", eta: "26 Jun 18h", fee: 8500, codAmount: 45000, codStatus: "a_collecter" },
   { id: "SHP-9819", customer: "Grace Adeyemi", from: "Abidjan", to: "Lagos", carrier: "FedEx", tracking: "FDX-321654", status: "En préparation", eta: "27 Jun 14h", fee: 12000 },
   { id: "SHP-9818", customer: "Kwame Mensah", from: "Abidjan", to: "Accra", carrier: "Yango", tracking: "YNG-451998", status: "Livré", eta: "Livré 23 Jun", fee: 2500 },
-  { id: "SHP-9817", customer: "Fatou Diop", from: "Abidjan", to: "Dakar", carrier: "DHL", tracking: "DHL-784012", status: "Livré", eta: "Livré 22 Jun", fee: 7500 },
-  { id: "SHP-9816", customer: "Ibrahim Koné", from: "Abidjan", to: "Bamako", carrier: "Coursier Local", tracking: "CSL-110892", status: "Retourné", eta: "N/A", fee: 5000 },
+  { id: "SHP-9817", customer: "Fatou Diop", from: "Abidjan", to: "Dakar", carrier: "DHL", tracking: "DHL-784012", status: "Livré", eta: "Livré 22 Jun", fee: 7500, codAmount: 38000, codStatus: "collecte" },
+  { id: "SHP-9816", customer: "Ibrahim Koné", from: "Abidjan", to: "Bamako", carrier: "Coursier Local", tracking: "CSL-110892", status: "Retourné", eta: "N/A", fee: 5000, codAmount: 94000, codStatus: "non_collecte" },
 ];
 
 export const CARRIERS = [
