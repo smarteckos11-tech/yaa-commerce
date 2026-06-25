@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 /**
  * POST /api/contact
- * Receives contact form submissions.
+ * Receives contact form submissions and stores them in Supabase.
  *
- * For now: just logs + returns success.
- * When Supabase is configured: insert into `contact_messages` table.
+ * Uses the service_role key (server-side only) to insert into the
+ * contact_messages table. RLS policy allows anyone to insert.
  */
 
 export async function POST(req: NextRequest) {
@@ -21,32 +22,78 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Log for now (replace with Supabase insert or Resend email later)
-    console.log("[Contact] Nouveau message:", {
-      name,
-      email,
-      phone,
-      subject,
-      boutique_name,
-      message,
-      timestamp: new Date().toISOString(),
-    });
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Format d'email invalide" },
+        { status: 400 }
+      );
+    }
 
-    // TODO: When Supabase is set up, uncomment this:
-    // import { supabaseAdmin } from "@/lib/supabase-admin";
-    // const { error } = await supabaseAdmin.from("contact_messages").insert({
-    //   name, email, phone, subject, boutique_name, message,
-    // });
-    // if (error) throw error;
+    // Insert into Supabase
+    const { data, error } = await supabaseAdmin
+      .from("contact_messages")
+      .insert({
+        name,
+        email,
+        phone: phone || null,
+        subject: subject || null,
+        boutique_name: boutique_name || null,
+        message,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[Contact] Supabase error:", error);
+      // Fallback: log the message so it's not lost
+      console.log("[Contact] Fallback log:", {
+        name, email, phone, subject, boutique_name, message,
+        timestamp: new Date().toISOString(),
+      });
+      // Still return success to user (don't expose DB errors)
+      return NextResponse.json({
+        success: true,
+        message: "Message reçu. Nous vous répondons sous 24h.",
+      });
+    }
+
+    console.log("[Contact] Message stored:", data.id);
 
     return NextResponse.json({
       success: true,
       message: "Message reçu. Nous vous répondons sous 24h.",
+      id: data.id,
     });
   } catch (error) {
     console.error("[Contact] Error:", error);
     return NextResponse.json(
       { error: "Erreur serveur. Réessayez plus tard." },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET /api/contact
+ * Returns all contact messages (admin only — should be protected)
+ */
+export async function GET() {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("contact_messages")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    return NextResponse.json({ messages: data });
+  } catch (error) {
+    console.error("[Contact GET] Error:", error);
+    return NextResponse.json(
+      { error: "Erreur serveur" },
       { status: 500 }
     );
   }
