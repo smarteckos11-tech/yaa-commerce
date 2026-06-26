@@ -44,6 +44,7 @@ function SignupForm() {
 
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [emailSent, setEmailSent] = React.useState(false);
 
   // Email signup
   const [firstname, setFirstname] = React.useState("");
@@ -80,24 +81,43 @@ function SignupForm() {
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        // Gérer les erreurs courantes avec messages en français
+        if (signUpError.message.includes("rate limit") || signUpError.message.includes("429")) {
+          setError("Trop de tentatives. Attendez quelques minutes avant de réessayer.");
+        } else if (signUpError.message.includes("already registered") || signUpError.message.includes("already been registered")) {
+          setError("Cet email est déjà inscrit. Essayez de vous connecter.");
+        } else if (signUpError.message.includes("weak")) {
+          setError("Mot de passe trop faible. Utilisez au moins 6 caractères avec des lettres et chiffres.");
+        } else {
+          setError(signUpError.message);
+        }
         setLoading(false);
         return;
       }
 
-      // Update profile
-      if (data.user) {
+      // Vérifier si une confirmation email est requise
+      if (data.user && !data.session) {
+        // Supabase a créé l'utilisateur mais n'a pas créé de session
+        // → confirmation email requise
+        setEmailSent(true);
+        setLoading(false);
+        return;
+      }
+
+      // Si on a une session → connecté immédiatement
+      if (data.user && data.session) {
+        // Update profile
         await supabase.from("profiles").update({
           full_name: `${firstname} ${lastname}`,
           phone,
           boutique_name: boutiqueName,
           plan: planId,
         }).eq("id", data.user.id);
-      }
 
-      toast.success("Compte créé ! Redirection...");
-      router.push("/admin");
-      router.refresh();
+        toast.success("Compte créé ! Redirection...");
+        router.push("/admin");
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");
       setLoading(false);
@@ -227,6 +247,32 @@ function SignupForm() {
               </div>
             )}
 
+            {/* Email confirmation screen */}
+            {emailSent ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 mx-auto rounded-full bg-yaa-green-100 flex items-center justify-center mb-4">
+                  <Mail className="w-8 h-8 text-yaa-green-600" />
+                </div>
+                <h2 className="font-display font-bold text-lg mb-2">Vérifiez votre email 📧</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Nous avons envoyé un lien de confirmation à <span className="font-semibold text-foreground">{email}</span>.
+                  Cliquez sur le lien dans l'email pour activer votre compte.
+                </p>
+                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 text-left mb-4">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-amber-700">⚠️ Pas reçu d'email ?</span>
+                    <br />
+                    1. Vérifiez vos spams<br />
+                    2. Attendez 1-2 minutes<br />
+                    3. Désactivez "Confirm email" dans Supabase Dashboard → Authentication → Settings pour les tests
+                  </p>
+                </div>
+                <Button asChild variant="outline" className="gap-1.5">
+                  <Link href="/login"><ArrowLeft className="w-4 h-4" /> Aller à la connexion</Link>
+                </Button>
+              </div>
+            ) : (
+            <>
             {/* Google */}
             <Button
               onClick={handleGoogleSignup}
@@ -356,6 +402,8 @@ function SignupForm() {
             <p className="text-[10px] text-center text-muted-foreground mt-4">
               En continuant, vous acceptez nos Conditions et notre Politique de confidentialité.
             </p>
+            </>
+            )}
           </div>
 
           {/* Right side — benefits */}
