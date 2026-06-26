@@ -46,7 +46,9 @@ export default function NewProductPage() {
   const [description, setDescription] = React.useState("");
   const [images, setImages] = React.useState<{ secure_url: string; public_id: string }[]>([]);
   const [trackInventory, setTrackInventory] = React.useState(true);
-  const [isPhysical, setIsPhysical] = React.useState(true);
+
+  // Derived from type — true only for physical products
+  const isPhysical = type === "physique";
 
   // Variants
   const [enableVariants, setEnableVariants] = React.useState(false);
@@ -95,7 +97,7 @@ Retour gratuit sous 7 jours`;
         name,
         sku: sku || null,
         category: category || null,
-        type: isPhysical ? "physique" : "digital",
+        type: type,
         price: parseInt(price) || 0,
         stock: isPhysical && trackInventory ? parseInt(stock) || 0 : null,
         description: description || null,
@@ -141,7 +143,7 @@ Retour gratuit sous 7 jours`;
           <Button variant="outline" asChild>
             <Link href="/admin/produits">Annuler</Link>
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5">
+          <Button type="submit" disabled={saving} className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5">
             <Save className="w-4 h-4" />
             {saving ? "Sauvegarde..." : "Sauvegarder"}
           </Button>
@@ -330,8 +332,8 @@ Retour gratuit sous 7 jours`;
                 <div>
                   <Label className="text-xs font-semibold">Type de produit</Label>
                   <Select
-                    value={isPhysical ? "physique" : "digital"}
-                    onValueChange={(v) => setIsPhysical(v === "physique")}
+                    value={type}
+                    onValueChange={(v) => setType(v as "physique" | "digital" | "service" | "subscription")}
                   >
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>

@@ -27,12 +27,23 @@ export function useAuth() {
   React.useEffect(() => {
     let mounted = true;
 
+    // Timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 5000);
+
+    // Récupère la session courante
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
+      clearTimeout(timeout);
       if (session?.user) {
         setUser(session.user);
         await loadProfile(session.user.id);
       }
+      setLoading(false);
+    }).catch(() => {
+      if (!mounted) return;
+      clearTimeout(timeout);
       setLoading(false);
     });
 
@@ -67,6 +78,7 @@ export function useAuth() {
 
     return () => {
       mounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [router]);
