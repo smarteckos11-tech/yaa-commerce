@@ -3,19 +3,27 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Refresh the Supabase session on every server request.
- * Required for Next.js App Router with Supabase Auth.
+ * Only runs on /admin/* routes to avoid breaking public pages.
  */
 export async function middleware(request: NextRequest) {
+  // Skip if Supabase is not configured
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === "https://placeholder.supabase.co") {
+    return NextResponse.next({
+      request: { headers: request.headers },
+    });
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -34,12 +42,14 @@ export async function middleware(request: NextRequest) {
           );
         },
       },
-    }
-  );
+    });
 
-  // IMPORTANT: Don't run any code between createServerClient and
-  // supabase.auth.getUser(). It will break the auth flow.
-  await supabase.auth.getUser();
+    // Refresh session — wrapped in try-catch to avoid breaking pages
+    await supabase.auth.getUser();
+  } catch (error) {
+    // Silently fail — the page will still render, just without auth
+    console.warn("[Middleware] Auth refresh failed:", error);
+  }
 
   return response;
 }
@@ -47,12 +57,10 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public assets (brands, uploads, etc.)
+     * Only run middleware on admin routes (where auth matters).
+     * Public routes (/, /login, /signup, /cart, /checkout, /b/*, /contact, /demo)
+     * don't need session refresh.
      */
-    "/((?!_next/static|_next/image|favicon.ico|brands|uploads|icon.svg|robots.txt|logo.svg).*)",
+    "/admin/:path*",
   ],
 };
