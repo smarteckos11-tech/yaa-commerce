@@ -26,6 +26,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Principal",
     items: [
       { label: "Tableau de Bord", href: "/admin", icon: "LayoutDashboard" },
+      { label: "Mes Boutiques", href: "/admin/stores", icon: "Store" },
       { label: "Produits", href: "/admin/produits", icon: "Package" },
       { label: "Commandes", href: "/admin/commandes", icon: "ShoppingCart", badge: { text: "12", variant: "green" } },
       { label: "Clients", href: "/admin/clients", icon: "Users" },
