@@ -347,3 +347,42 @@ create index if not exists idx_contact_messages_created_at on public.contact_mes
 -- Vos tables sont prêtes. Row Level Security activé partout.
 -- Chaque utilisateur ne peut voir que ses propres données.
 -- Les nouveaux inscrits auront automatiquement un profil créé.
+
+-- ============================================================
+-- 17. PRODUCT_REVIEWS (avis clients)
+-- ============================================================
+create table if not exists public.product_reviews (
+  id uuid default gen_random_uuid() primary key,
+  product_id uuid references public.products on delete cascade not null,
+  user_id uuid references public.profiles on delete set null,
+  author_name text not null,
+  author_email text,
+  rating integer not null check (rating >= 1 and rating <= 5),
+  title text,
+  comment text not null,
+  status text default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  helpful_count integer default 0,
+  created_at timestamp with time zone default now()
+);
+
+alter table public.product_reviews enable row level security;
+
+-- Anyone can read APPROVED reviews
+create policy "Anyone can read approved reviews" on public.product_reviews
+  for select using (status = 'approved');
+
+-- Anyone can insert reviews (public form)
+create policy "Anyone can insert reviews" on public.product_reviews
+  for insert with check (true);
+
+-- Product owners can manage reviews on their products
+create policy "Owners can manage reviews" on public.product_reviews
+  for all using (
+    exists (
+      select 1 from public.products p
+      where p.id = product_reviews.product_id and p.user_id = auth.uid()
+    )
+  );
+
+create index if not exists idx_reviews_product_id on public.product_reviews(product_id);
+create index if not exists idx_reviews_status on public.product_reviews(status);

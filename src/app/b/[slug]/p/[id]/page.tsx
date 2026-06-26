@@ -32,6 +32,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase-client";
 import { useCart } from "@/lib/cart-store";
+import { ProductReviews } from "@/components/storefront/product-reviews";
 import { cn } from "@/lib/utils";
 
 type Product = {
@@ -422,39 +423,9 @@ export default function ProductPage() {
           </div>
         </section>
 
-        {/* === REVIEWS SECTION === */}
+        {/* === REVIEWS SECTION (real Supabase) === */}
         <section className="mb-12">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display font-bold text-xl">Avis clients ({reviewCount})</h2>
-            <div className="flex items-center gap-2">
-              <div className="flex">{[1,2,3,4,5].map((i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}</div>
-              <span className="text-sm font-bold">{avgRating}/5</span>
-            </div>
-          </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            {MOCK_REVIEWS.map((review, i) => (
-              <motion.div key={review.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                <Card className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-yaa-green-100 flex items-center justify-center text-xs font-bold text-yaa-green-700">
-                        {review.author[0]}
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold">{review.author}</p>
-                        <p className="text-[10px] text-muted-foreground">{review.date}</p>
-                      </div>
-                    </div>
-                    <div className="flex">{[1,2,3,4,5].map((j) => <Star key={j} className={cn("w-3 h-3", j <= review.rating ? "fill-amber-400 text-amber-400" : "text-slate-300")} />)}</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed mb-2">{review.comment}</p>
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                    <ThumbsUp className="w-3 h-3" /> Utile ({review.helpful})
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+          <ProductReviews productId={product.id} />
         </section>
 
         {/* === RELATED PRODUCTS (UPSELL) === */}
