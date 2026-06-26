@@ -129,6 +129,7 @@ Retour gratuit sous 7 jours`;
 
   return (
     <motion.div variants={container} initial="hidden" animate="show">
+      <form onSubmit={handleSave}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon">
@@ -150,7 +151,7 @@ Retour gratuit sous 7 jours`;
         </div>
       </div>
 
-      <form onSubmit={handleSave} className="grid lg:grid-cols-3 gap-4">
+      <div className="grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
           <motion.div variants={item}>
             <Card className="p-5">
@@ -501,6 +502,7 @@ Retour gratuit sous 7 jours`;
             </Card>
           </motion.div>
         </div>
+      </div>
       </form>
     </motion.div>
   );
