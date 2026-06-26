@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ServiceWorkerRegister } from "@/components/pwa/register-sw";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -37,8 +38,16 @@ export const metadata: Metadata = {
     "boutique en ligne Afrique",
   ],
   authors: [{ name: "YAA" }],
+  manifest: "/manifest.json",
+  applicationName: "YAA Commerce",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "YAA Commerce",
+  },
   icons: {
     icon: "/icon.svg",
+    apple: "/icon.svg",
   },
   openGraph: {
     title: "YAA — L'Afrique avance, vos ambitions prennent vie",
@@ -73,6 +82,7 @@ export default function RootLayout({
         >
           {children}
           <Toaster />
+          <ServiceWorkerRegister />
         </ThemeProvider>
       </body>
     </html>

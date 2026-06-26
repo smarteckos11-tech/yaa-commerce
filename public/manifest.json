@@ -1,0 +1,43 @@
+{
+  "name": "YAA Commerce — E-commerce Africain",
+  "short_name": "YAA",
+  "description": "La plateforme e-commerce tout-en-un pour les marchands africains. Boutique, paiements Mobile Money, livraison, WhatsApp Business, IA.",
+  "start_url": "/admin",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0F8A5F",
+  "theme_color": "#0F8A5F",
+  "scope": "/",
+  "lang": "fr",
+  "categories": ["shopping", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tableau de bord",
+      "url": "/admin",
+      "description": "Voir votre tableau de bord"
+    },
+    {
+      "name": "Mes produits",
+      "url": "/admin/produits",
+      "description": "Gérer vos produits"
+    },
+    {
+      "name": "Commandes",
+      "url": "/admin/commandes",
+      "description": "Voir vos commandes"
+    },
+    {
+      "name": "Nouveau produit",
+      "url": "/admin/produits/nouveau",
+      "description": "Ajouter un produit"
+    }
+  ]
+}
