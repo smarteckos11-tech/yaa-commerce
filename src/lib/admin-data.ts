@@ -53,6 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Système",
     items: [
       { label: "Super Admin", href: "/admin/super-admin", icon: "ShieldCheck" },
+      { label: "Paramètres", href: "/admin/settings", icon: "Settings" },
       { label: "Messages", href: "/admin/messages", icon: "Mail" },
     ],
   },

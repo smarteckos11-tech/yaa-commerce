@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Sparkles, DollarSign, Tag, Box, FileText, Settings } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, DollarSign, Tag, Box, FileText, Settings, Layers, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +37,7 @@ export default function NewProductPage() {
   const [name, setName] = React.useState("");
   const [sku, setSku] = React.useState("");
   const [category, setCategory] = React.useState("");
-  const [type, setType] = React.useState<"physique" | "digital">("physique");
+  const [type, setType] = React.useState<"physique" | "digital" | "service" | "subscription">("physique");
   const [price, setPrice] = React.useState("");
   const [compareAtPrice, setCompareAtPrice] = React.useState("");
   const [stock, setStock] = React.useState("");
@@ -46,6 +46,12 @@ export default function NewProductPage() {
   const [images, setImages] = React.useState<{ secure_url: string; public_id: string }[]>([]);
   const [trackInventory, setTrackInventory] = React.useState(true);
   const [isPhysical, setIsPhysical] = React.useState(true);
+
+  // Variants
+  const [enableVariants, setEnableVariants] = React.useState(false);
+  const [variants, setVariants] = React.useState<{ size: string; color: string; sku: string; stock: string; price: string }[]>([
+    { size: "", color: "", sku: "", stock: "", price: "" },
+  ]);
 
   const handleGenerateDescription = async () => {
     if (!name) {
@@ -331,6 +337,8 @@ Retour gratuit sous 7 jours`;
                     <SelectContent>
                       <SelectItem value="physique">Physique (livraison)</SelectItem>
                       <SelectItem value="digital">Digital (téléchargement)</SelectItem>
+                      <SelectItem value="service">Service (prestation)</SelectItem>
+                      <SelectItem value="subscription">Abonnement</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -351,6 +359,123 @@ Retour gratuit sous 7 jours`;
                   </div>
                 )}
               </div>
+            </Card>
+          </motion.div>
+
+          {/* Variants */}
+          <motion.div variants={item}>
+            <Card className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-yaa-green-500" />
+                  <h2 className="font-display font-semibold">Variantes</h2>
+                </div>
+                <Switch checked={enableVariants} onCheckedChange={setEnableVariants} />
+              </div>
+              {enableVariants ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Créez des variantes par taille, couleur, etc. Chaque variante a son propre SKU, stock et prix.
+                  </p>
+                  {variants.map((v, i) => (
+                    <div key={i} className="grid grid-cols-5 gap-2 items-end">
+                      <div>
+                        <Label className="text-[10px] font-semibold">Taille</Label>
+                        <Input
+                          placeholder="M, L, XL"
+                          className="mt-0.5 h-8 text-xs"
+                          value={v.size}
+                          onChange={(e) => {
+                            const next = [...variants];
+                            next[i].size = e.target.value;
+                            setVariants(next);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-semibold">Couleur</Label>
+                        <Input
+                          placeholder="Rouge"
+                          className="mt-0.5 h-8 text-xs"
+                          value={v.color}
+                          onChange={(e) => {
+                            const next = [...variants];
+                            next[i].color = e.target.value;
+                            setVariants(next);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-semibold">SKU</Label>
+                        <Input
+                          placeholder="MOD-SC-M"
+                          className="mt-0.5 h-8 text-xs font-mono"
+                          value={v.sku}
+                          onChange={(e) => {
+                            const next = [...variants];
+                            next[i].sku = e.target.value;
+                            setVariants(next);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-semibold">Stock</Label>
+                        <Input
+                          type="number"
+                          placeholder="25"
+                          className="mt-0.5 h-8 text-xs"
+                          value={v.stock}
+                          onChange={(e) => {
+                            const next = [...variants];
+                            next[i].stock = e.target.value;
+                            setVariants(next);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-semibold">Prix</Label>
+                        <div className="flex gap-1">
+                          <Input
+                            type="number"
+                            placeholder="25000"
+                            className="mt-0.5 h-8 text-xs"
+                            value={v.price}
+                            onChange={(e) => {
+                              const next = [...variants];
+                              next[i].price = e.target.value;
+                              setVariants(next);
+                            }}
+                          />
+                          {variants.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 flex-shrink-0 text-rose-600"
+                              onClick={() => setVariants(variants.filter((_, idx) => idx !== i))}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 mt-2"
+                    onClick={() => setVariants([...variants, { size: "", color: "", sku: "", stock: "", price: "" }])}
+                  >
+                    <Plus className="w-3 h-3" /> Ajouter une variante
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Activez les variantes si votre produit existe en plusieurs tailles, couleurs ou formats.
+                </p>
+              )}
             </Card>
           </motion.div>
 

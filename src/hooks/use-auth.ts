@@ -72,11 +72,39 @@ export function useAuth() {
   }, [router]);
 
   const signOut = React.useCallback(async () => {
+    // 1. Sign out from Supabase (clears JWT + session cookies)
     await supabase.auth.signOut();
+
+    // 2. Clear all localStorage (Supabase stores tokens here)
+    try {
+      localStorage.clear();
+    } catch {}
+
+    // 3. Clear all sessionStorage
+    try {
+      sessionStorage.clear();
+    } catch {}
+
+    // 4. Clear any remaining cookies related to auth
+    if (typeof document !== "undefined") {
+      document.cookie.split(";").forEach((c) => {
+        const eqPos = c.indexOf("=");
+        const name = eqPos > -1 ? c.substring(0, eqPos).trim() : c.trim();
+        // Delete across all paths and domains
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
+        // Also try with leading dot for subdomain cookies
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${window.location.hostname}`;
+      });
+    }
+
+    // 5. Reset state
     setUser(null);
     setProfile(null);
-    router.push("/login");
-  }, [router]);
+
+    // 6. Redirect to login (hard navigation to clear any cached state)
+    window.location.href = "/login";
+  }, []);
 
   return { user, profile, loading, signOut };
 }
