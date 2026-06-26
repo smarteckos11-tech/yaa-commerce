@@ -219,11 +219,10 @@ export default function ProductPage() {
             </div>
 
             {product.description && (
-              <div className="prose prose-sm max-w-none">
-                <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-                  {product.description}
-                </p>
-              </div>
+              <div
+                className="prose prose-sm max-w-none text-muted-foreground leading-relaxed [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-foreground [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-yaa-green-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_img]:rounded-lg [&_a]:text-yaa-green-600 [&_a]:underline"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
             )}
 
             <div className="space-y-3 pt-4 border-t border-slate-200">

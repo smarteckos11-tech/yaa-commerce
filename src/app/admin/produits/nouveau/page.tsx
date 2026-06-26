@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { Card } from "@/components/ui/card";
 import {
   Select,
@@ -182,16 +183,15 @@ Retour gratuit sous 7 jours`;
                       {generatingDesc ? "Génération..." : "IA: Générer"}
                     </Button>
                   </div>
-                  <Textarea
-                    id="description"
-                    placeholder="Décrivez votre produit en détail. Utilisez l'IA YaaMind pour générer une description optimisée SEO."
-                    rows={6}
-                    className="mt-1"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={description}
+                      onChange={setDescription}
+                      placeholder="Décrivez votre produit en détail. Utilisez l'IA YaaMind pour générer une description optimisée SEO."
+                    />
+                  </div>
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    Markdown supporté · Optimisez pour le SEO
+                    Éditeur riche : titres, gras, listes, images, liens · Optimisez pour le SEO
                   </p>
                 </div>
               </div>
