@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase-client";
+import { useCart } from "@/lib/cart-store";
 
 type Product = {
   id: string;
@@ -49,6 +50,8 @@ export default function ProductPage() {
   const [loading, setLoading] = React.useState(true);
   const [quantity, setQuantity] = React.useState(1);
   const [selectedImage, setSelectedImage] = React.useState(0);
+  const [justAdded, setJustAdded] = React.useState(false);
+  const add = useCart((s) => s.add);
 
   React.useEffect(() => {
     async function load() {
@@ -249,10 +252,22 @@ export default function ProductPage() {
                 <Button
                   size="lg"
                   disabled={!inStock}
+                  onClick={() => {
+                    add({
+                      productId: product.id,
+                      name: product.name,
+                      price: product.price,
+                      image: product.image_url,
+                      slug,
+                    }, quantity);
+                    // Show feedback
+                    setJustAdded(true);
+                    setTimeout(() => setJustAdded(false), 2000);
+                  }}
                   className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-2 h-12"
                 >
                   <ShoppingCart className="w-4 h-4" />
-                  {inStock ? "Ajouter au panier" : "Rupture de stock"}
+                  {justAdded ? "✓ Ajouté !" : inStock ? "Ajouter au panier" : "Rupture de stock"}
                 </Button>
                 <Button
                   size="lg"
