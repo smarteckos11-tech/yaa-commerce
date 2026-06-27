@@ -2,337 +2,430 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { RefreshCw, Settings, Search, CheckCircle2, Clock, XCircle, Globe, Banknote, AlertTriangle, ArrowRight } from "lucide-react";
+import {
+  RefreshCw,
+  Search,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Banknote,
+  AlertTriangle,
+  ArrowRight,
+  Loader2,
+  Link2,
+  QrCode,
+  ExternalLink,
+  Trash2,
+  Plus,
+  Wallet,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { StatCard, PageHeader } from "@/components/admin/ui-bits";
-import { PROVIDERS, PAYMENT_STATS, TRANSACTIONS, PAYMENT_COLORS, COD_ORDERS, COD_STATS, formatFCFA, type CodStatus } from "@/lib/admin-data";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { PageHeader } from "@/components/admin/ui-bits";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase-client";
+import { formatFCFA } from "@/lib/admin-data";
 import { cn } from "@/lib/utils";
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
 const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
 
-const TX_STATUS = {
-  "Réussi": { icon: CheckCircle2, color: "text-yaa-green-600" },
-  "En attente": { icon: Clock, color: "text-amber-600" },
-  "Échec": { icon: XCircle, color: "text-rose-600" },
-};
+// 10 opérateurs avec leurs infos
+const PROVIDERS = [
+  { name: "Wave", color: "#1DC7EA", initials: "W", type: "Mobile Money", desc: "Lien de paiement Wave", placeholder: "https://pay.wave.com/m/votre-id ou wa.me/votre-numero" },
+  { name: "Orange Money", color: "#FF6600", initials: "OM", type: "Mobile Money", desc: "Lien Orange Money Marchand", placeholder: "https://orange-money.ci/pay/votre-id" },
+  { name: "MTN MoMo", color: "#FFCC00", initials: "MTN", type: "Mobile Money", desc: "Lien MTN MoMo", placeholder: "https://momo.mtn.ci/votre-id" },
+  { name: "Moov Money", color: "#00A0E3", initials: "MV", type: "Mobile Money", desc: "Lien Moov Money", placeholder: "https://moov-africa.com/money/votre-id" },
+  { name: "CinetPay", color: "#1B4D8C", initials: "CP", type: "Agrégateur", desc: "Lien CinetPay", placeholder: "https://cinetpay.com/p/votre-id" },
+  { name: "Stripe", color: "#635BFF", initials: "S", type: "Carte bancaire", desc: "Lien de paiement Stripe", placeholder: "https://buy.stripe.com/votre-lien" },
+  { name: "PayPal", color: "#0070BA", initials: "PP", type: "Portefeuille", desc: "Lien PayPal.me", placeholder: "https://paypal.me/votre-nom" },
+  { name: "Flutterwave", color: "#F5A623", initials: "FW", type: "Agrégateur", desc: "Lien Flutterwave", placeholder: "https://flutterwave.com/pay/votre-id" },
+  { name: "PayDunya", color: "#1B9E77", initials: "PD", type: "Agrégateur", desc: "Lien PayDunya", placeholder: "https://paydunya.com/votre-id" },
+  { name: "Paiement à la livraison", color: "#0F8A5F", initials: "COD", type: "Cash", desc: "Pas de lien — paiement cash à la livraison", placeholder: "" },
+];
 
-const COD_STATUS_INFO: Record<CodStatus, { label: string; color: string; bg: string; icon: React.ElementType }> = {
-  a_collecter: { label: "À collecter", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-100 dark:bg-amber-950/50", icon: Clock },
-  collecte: { label: "Collecté", color: "text-yaa-green-700 dark:text-yaa-green-400", bg: "bg-yaa-green-100 dark:bg-yaa-green-950/50", icon: CheckCircle2 },
-  non_collecte: { label: "Non collecté", color: "text-rose-700 dark:text-rose-400", bg: "bg-rose-100 dark:bg-rose-950/50", icon: XCircle },
-  reconcilie: { label: "Réconcilié", color: "text-sky-700 dark:text-sky-400", bg: "bg-sky-100 dark:bg-sky-950/50", icon: Banknote },
+type PaymentLink = {
+  id: string;
+  provider: string;
+  link_url: string;
+  phone_number: string | null;
+  is_active: boolean;
 };
 
 export default function PaiementsPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [links, setLinks] = React.useState<PaymentLink[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [showModal, setShowModal] = React.useState(false);
+  const [editingProvider, setEditingProvider] = React.useState<string | null>(null);
+  const [linkUrl, setLinkUrl] = React.useState("");
+  const [phoneNumber, setPhoneNumber] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+
+  const loadLinks = React.useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("payment_links")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      setLinks((data || []) as PaymentLink[]);
+    } catch (err) {
+      // Table might not exist yet
+      console.warn("[Paiements] Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  React.useEffect(() => {
+    loadLinks();
+  }, [loadLinks]);
+
+  const handleSave = async () => {
+    if (!user || !editingProvider) return;
+    const provider = PROVIDERS.find(p => p.name === editingProvider);
+    if (!provider) return;
+
+    if (editingProvider !== "Paiement à la livraison" && !linkUrl) {
+      toast({ title: "Lien requis", description: "Entrez votre lien de paiement", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const existing = links.find(l => l.provider === editingProvider);
+
+      if (existing) {
+        // Update
+        const { error } = await supabase
+          .from("payment_links")
+          .update({ link_url: linkUrl || "cod", phone_number: phoneNumber || null, is_active: true })
+          .eq("id", existing.id);
+
+        if (error) throw error;
+
+        setLinks(links.map(l => l.id === existing.id ? { ...l, link_url: linkUrl || "cod", phone_number: phoneNumber || null, is_active: true } : l));
+      } else {
+        // Insert
+        const { data, error } = await supabase
+          .from("payment_links")
+          .insert({
+            user_id: user.id,
+            provider: editingProvider,
+            link_url: linkUrl || "cod",
+            phone_number: phoneNumber || null,
+            is_active: true,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setLinks([...links, data as PaymentLink]);
+      }
+
+      toast({ title: "Paiement connecté ✓", description: `${provider.name} est maintenant actif` });
+      setShowModal(false);
+      setEditingProvider(null);
+      setLinkUrl("");
+      setPhoneNumber("");
+    } catch (err) {
+      toast({ title: "Erreur", description: "Sauvegarde impossible. Exécutez le SQL payment_links dans Supabase.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDisconnect = async (providerName: string) => {
+    const link = links.find(l => l.provider === providerName);
+    if (!link) return;
+
+    try {
+      const { error } = await supabase
+        .from("payment_links")
+        .delete()
+        .eq("id", link.id);
+
+      if (error) throw error;
+
+      setLinks(links.filter(l => l.id !== link.id));
+      toast({ title: "Déconnecté", description: `${providerName} n'est plus actif` });
+    } catch (err) {
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
+
+  const openModal = (providerName: string) => {
+    setEditingProvider(providerName);
+    const existing = links.find(l => l.provider === providerName);
+    setLinkUrl(existing?.link_url && existing.link_url !== "cod" ? existing.link_url : "");
+    setPhoneNumber(existing?.phone_number || "");
+    setShowModal(true);
+  };
+
+  // Stats
+  const connectedCount = links.length;
+  const totalBalance = 0; // Pas de solde réel sans API provider
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-yaa-green-500" />
+      </div>
+    );
+  }
+
   return (
     <motion.div variants={container} initial="hidden" animate="show">
       <PageHeader
         title="Paiements"
-        subtitle="Gérez vos fournisseurs de paiement Mobile Money et transactions"
+        subtitle="Connectez vos comptes Mobile Money pour recevoir des paiements directs par QR code"
         actions={
-          <>
-            <Button variant="outline" size="sm" className="gap-1.5"><RefreshCw className="h-4 w-4" /> Synchroniser</Button>
-            <Button variant="outline" size="sm" className="gap-1.5"><Settings className="h-4 w-4" /> Configurer</Button>
-          </>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast({ title: "Synchronisation", description: "Les soldes seront disponibles quand les API seront connectées" })}>
+            <RefreshCw className="w-4 w-4" /> Synchroniser
+          </Button>
         }
       />
 
+      {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
-        {PAYMENT_STATS.map((s) => (
-          <StatCard
-            key={s.label}
-            label={s.label}
-            value={s.value}
-            color={s.color}
-            icon={s.icon}
-            format={s.format as "number" | "fcfa" | "percent" | undefined}
-            suffix={s.suffix}
-          />
-        ))}
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-yaa-green-100 dark:bg-yaa-green-950/50 flex items-center justify-center">
+              <Wallet className="w-4 h-4 text-yaa-green-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold">{connectedCount}</p>
+          <p className="text-xs text-muted-foreground">Méthodes connectées</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-yaa-orange-100 dark:bg-yaa-orange-950/50 flex items-center justify-center">
+              <QrCode className="w-4 h-4 text-yaa-orange-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold">{links.filter(l => l.provider !== "Paiement à la livraison").length}</p>
+          <p className="text-xs text-muted-foreground">QR codes actifs</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950/50 flex items-center justify-center">
+              <Banknote className="w-4 h-4 text-purple-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold">{links.some(l => l.provider === "Paiement à la livraison") ? "1" : "0"}</p>
+          <p className="text-xs text-muted-foreground">COD activé</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-950/50 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4 text-sky-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold">{connectedCount > 0 ? "100%" : "0%"}</p>
+          <p className="text-xs text-muted-foreground">Taux de succès</p>
+        </Card>
       </motion.div>
 
+      {/* Providers grid */}
       <motion.div variants={item}>
-        <Tabs defaultValue="fournisseurs">
-          <TabsList className="mb-4">
-            <TabsTrigger value="fournisseurs">Fournisseurs</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="cod" className="gap-1.5">
-              <Banknote className="w-3.5 h-3.5" />
-              COD (Cash)
-              <span className="ml-1 text-[10px] font-bold bg-yaa-orange-500 text-white px-1.5 py-0.5 rounded-full">
-                {COD_STATS.pendingOrders}
-              </span>
-            </TabsTrigger>
-          </TabsList>
+        <h2 className="font-display font-semibold text-lg mb-3">Méthodes de paiement</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Connectez vos comptes en ajoutant votre lien de paiement. Le client scannera le QR code et payera directement dans l'app de l'opérateur.
+        </p>
 
-          {/* Tab Fournisseurs */}
-          <TabsContent value="fournisseurs" className="mt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-              {PROVIDERS.map((p, idx) => (
-                <motion.div
-                  key={p.name}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.04 }}
-                >
-                  <Card className="overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="h-1.5" style={{ background: p.color }} />
-                    <div className="p-4">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div
-                          className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                          style={{ background: p.color }}
-                        >
-                          {p.initials}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="font-semibold truncate">{p.name}</p>
-                            {p.connected && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-yaa-green-700 bg-yaa-green-100 dark:bg-yaa-green-950/50 dark:text-yaa-green-400 px-1.5 py-0.5 rounded">
-                                <span className="w-1 h-1 rounded-full bg-yaa-green-500" /> Connecté
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-muted-foreground">{p.type}</p>
-                        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+          {PROVIDERS.map((provider, idx) => {
+            const link = links.find(l => l.provider === provider.name);
+            const isConnected = !!link;
+
+            return (
+              <motion.div
+                key={provider.name}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.04 }}
+              >
+                <Card className={cn("p-4 hover:shadow-md transition-shadow h-full flex flex-col", !isConnected && "opacity-80")}>
+                  {/* Color bar */}
+                  <div className="h-1 rounded-full mb-3" style={{ background: provider.color }} />
+
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                        style={{ background: provider.color }}
+                      >
+                        {provider.initials}
                       </div>
-                      <p className="text-[11px] text-muted-foreground flex items-center gap-1 mb-3">
-                        <Globe className="h-3 w-3" /> {p.country}
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-semibold text-sm">{provider.name}</p>
+                          {isConnected && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-yaa-green-700 bg-yaa-green-100 dark:bg-yaa-green-950/50 dark:text-yaa-green-400 px-1.5 py-0.5 rounded">
+                              <span className="w-1 h-1 rounded-full bg-yaa-green-500" /> Connecté
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">{provider.type}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <p className="text-xs text-muted-foreground mb-3 flex-1">{provider.desc}</p>
+
+                  {/* Link preview */}
+                  {isConnected && link && (
+                    <div className="mb-3 p-2 rounded-lg bg-muted/50 flex items-center gap-2">
+                      <QrCode className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <p className="text-[10px] font-mono text-muted-foreground truncate flex-1">
+                        {link.link_url === "cod" ? "Cash à la livraison" : link.link_url}
                       </p>
-                      {p.connected ? (
-                        <div className="grid grid-cols-2 gap-2 mb-3 p-2.5 bg-muted/50 rounded-lg">
-                          <div>
-                            <p className="text-[10px] text-muted-foreground">Solde</p>
-                            <p className="text-sm font-bold">{formatFCFA(p.balance || 0)}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-muted-foreground">Transactions</p>
-                            <p className="text-sm font-bold">{p.transactions}</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mb-3 p-2.5 bg-muted/30 rounded-lg text-center">
-                          <p className="text-xs text-muted-foreground">Non configuré</p>
-                        </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  {isConnected ? (
+                    <div className="flex gap-2 mt-auto">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-1.5"
+                        onClick={() => openModal(provider.name)}
+                      >
+                        <Link2 className="w-3.5 h-3.5" /> Modifier
+                      </Button>
+                      {link && link.link_url !== "cod" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5"
+                          onClick={() => window.open(link.link_url, "_blank")}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Button>
                       )}
                       <Button
-                        variant={p.connected ? "outline" : "default"}
                         size="sm"
-                        className={cn("w-full", !p.connected && "bg-yaa-green-500 hover:bg-yaa-green-600")}
+                        variant="ghost"
+                        className="text-rose-600"
+                        onClick={() => handleDisconnect(provider.name)}
                       >
-                        {p.connected ? "Configurer" : "Connecter"}
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
-                  </Card>
-                </motion.div>
-              ))}
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="w-full mt-auto bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5"
+                      onClick={() => openModal(provider.name)}
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Connecter
+                    </Button>
+                  )}
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      {/* Info banner */}
+      <motion.div variants={item} className="mt-6">
+        <div className="p-4 rounded-xl bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200">
+          <div className="flex items-start gap-3">
+            <QrCode className="w-5 h-5 text-yaa-green-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-yaa-green-700">Comment ça marche ?</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                1. Ajoutez votre lien de paiement pour chaque opérateur (ex: lien Wave Marchand)<br/>
+                2. Au checkout, le client choisit son opérateur<br/>
+                3. Un QR code est généré — le client scanne et paye directement dans l'app<br/>
+                4. Pour Wave : utilisez votre lien <code className="bg-white dark:bg-slate-800 px-1 rounded">https://pay.wave.com/m/votre-id</code><br/>
+                5. Pour COD : aucun lien requis, le client paie en cash à la livraison
+              </p>
             </div>
-          </TabsContent>
+          </div>
+        </div>
+      </motion.div>
 
-          {/* Tab Transactions */}
-          <TabsContent value="transactions" className="mt-0">
-            <Card className="p-4 lg:p-5">
-              <div className="relative max-w-md mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Rechercher une transaction..." className="pl-9" />
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/30">
-                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5">ID</th>
-                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5">Client</th>
-                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5 hidden md:table-cell">Fournisseur</th>
-                      <th className="text-right font-medium text-muted-foreground px-3 py-2.5">Montant</th>
-                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5 hidden lg:table-cell">Référence</th>
-                      <th className="text-center font-medium text-muted-foreground px-3 py-2.5">Statut</th>
-                      <th className="text-right font-medium text-muted-foreground px-3 py-2.5 hidden sm:table-cell">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {TRANSACTIONS.map((tx, idx) => {
-                      const pay = PAYMENT_COLORS[tx.provider];
-                      const st = TX_STATUS[tx.status];
-                      const StIcon = st.icon;
-                      return (
-                        <motion.tr
-                          key={tx.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.04 }}
-                          className="border-b last:border-b-0 hover:bg-muted/30"
-                        >
-                          <td className="px-3 py-3 font-mono text-xs">{tx.id}</td>
-                          <td className="px-3 py-3 font-medium">{tx.client}</td>
-                          <td className="px-3 py-3 hidden md:table-cell">
-                            <span className={cn("inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded", pay.bg, pay.text)}>
-                              <span className="w-1.5 h-1.5 rounded-full" style={{ background: pay.dot }} />
-                              {tx.provider}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3 text-right font-semibold">{formatFCFA(tx.amount)}</td>
-                          <td className="px-3 py-3 hidden lg:table-cell font-mono text-xs text-muted-foreground">{tx.reference}</td>
-                          <td className="px-3 py-3 text-center">
-                            <span className={cn("inline-flex items-center gap-1 text-xs font-semibold", st.color)}>
-                              <StIcon className="h-3 w-3" /> {tx.status}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3 text-right text-xs text-muted-foreground hidden sm:table-cell">{tx.date}</td>
-                        </motion.tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* Tab COD — Cash on Delivery */}
-          <TabsContent value="cod" className="mt-0 space-y-4">
-            {/* COD stats row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <Card className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-amber-600" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">À collecter</p>
-                </div>
-                <p className="text-xl font-display font-bold">{formatFCFA(COD_STATS.totalToCollect)}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{COD_STATS.pendingOrders} commandes en attente</p>
-              </Card>
-              <Card className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-yaa-green-100 dark:bg-yaa-green-950/50 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-yaa-green-600" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Collecté</p>
-                </div>
-                <p className="text-xl font-display font-bold text-yaa-green-600">{formatFCFA(COD_STATS.totalCollected)}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">En caisse livreur</p>
-              </Card>
-              <Card className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950/50 flex items-center justify-center">
-                    <AlertTriangle className="w-4 h-4 text-rose-600" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Écarts</p>
-                </div>
-                <p className="text-xl font-display font-bold text-rose-600">{formatFCFA(COD_STATS.totalDiscrepancy)}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">À investiguer</p>
-              </Card>
-              <Card className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-950/50 flex items-center justify-center">
-                    <Banknote className="w-4 h-4 text-sky-600" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Réconcilié</p>
-                </div>
-                <p className="text-xl font-display font-bold text-sky-600">{formatFCFA(COD_STATS.totalReconciled)}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">En banque</p>
-              </Card>
-            </div>
-
-            {/* COD table */}
-            <Card className="p-4 lg:p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="font-display font-semibold text-base">Réconciliation COD</h3>
-                  <p className="text-xs text-muted-foreground">Suivi des encaissements cash par les livreurs</p>
-                </div>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5" /> Marquer réconcilié
-                </Button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/30">
-                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5">Commande</th>
-                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5">Client</th>
-                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5 hidden md:table-cell">Ville</th>
-                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5">Livreur</th>
-                      <th className="text-right font-medium text-muted-foreground px-3 py-2.5">À collecter</th>
-                      <th className="text-center font-medium text-muted-foreground px-3 py-2.5">Statut</th>
-                      <th className="text-right font-medium text-muted-foreground px-3 py-2.5 hidden lg:table-cell">Écart</th>
-                      <th className="px-3 py-2.5"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {COD_ORDERS.map((cod, idx) => {
-                      const stInfo = COD_STATUS_INFO[cod.status];
-                      const StIcon = stInfo.icon;
-                      return (
-                        <motion.tr
-                          key={cod.orderId}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.04 }}
-                          className="border-b last:border-b-0 hover:bg-muted/30"
-                        >
-                          <td className="px-3 py-3 font-mono text-xs">{cod.orderId}</td>
-                          <td className="px-3 py-3 font-medium">{cod.customer}</td>
-                          <td className="px-3 py-3 hidden md:table-cell text-muted-foreground">{cod.city}</td>
-                          <td className="px-3 py-3 text-xs">{cod.collectedBy || cod.carrier}</td>
-                          <td className="px-3 py-3 text-right font-semibold">{formatFCFA(cod.amountToCollect)}</td>
-                          <td className="px-3 py-3 text-center">
-                            <span className={cn("inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded", stInfo.bg, stInfo.color)}>
-                              <StIcon className="w-3 h-3" />
-                              {stInfo.label}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3 text-right hidden lg:table-cell">
-                            {cod.discrepancy !== undefined && cod.discrepancy > 0 ? (
-                              <span className="text-xs font-bold text-rose-600">-{formatFCFA(cod.discrepancy)}</span>
-                            ) : cod.discrepancy === 0 ? (
-                              <span className="text-xs text-yaa-green-600">✓ 0</span>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">—</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-3 text-right">
-                            {cod.status === "a_collecter" && (
-                              <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1">
-                                <ArrowRight className="w-3 h-3" /> Confirmer
-                              </Button>
-                            )}
-                            {cod.status === "collecte" && (
-                              <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1 border-yaa-green-300 text-yaa-green-600 hover:bg-yaa-green-50">
-                                <Banknote className="w-3 h-3" /> Réconcilier
-                              </Button>
-                            )}
-                            {cod.status === "non_collecte" && (
-                              <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1 border-rose-300 text-rose-600 hover:bg-rose-50">
-                                <AlertTriangle className="w-3 h-3" /> Suivre
-                              </Button>
-                            )}
-                            {cod.status === "reconcilie" && (
-                              <span className="text-[11px] text-muted-foreground">Clôturé</span>
-                            )}
-                          </td>
-                        </motion.tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <div className="mt-4 p-3 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/20 border border-yaa-green-200 flex items-start gap-2">
-                <Banknote className="w-4 h-4 text-yaa-green-600 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-yaa-green-700">Workflow COD :</span>{" "}
-                  commande → livreur collecte le cash → marquer "Collecté" → verser en caisse → "Réconcilié" quand l'argent est en banque.
-                  En Afrique, le COD représente 60-80% des paiements e-commerce — surveillez les écarts quotidien.
+      {/* Modal: Connect provider */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Connecter {editingProvider}</DialogTitle>
+            <DialogDescription>
+              Ajoutez votre lien de paiement. Les clients scanneront le QR code pour payer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {editingProvider !== "Paiement à la livraison" && (
+              <div>
+                <Label htmlFor="link-url" className="text-xs font-semibold">Lien de paiement *</Label>
+                <Input
+                  id="link-url"
+                  placeholder={PROVIDERS.find(p => p.name === editingProvider)?.placeholder || "https://..."}
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Pour Wave : Dashboard Wave → Recevoir → Partager le lien<br/>
+                  Pour Orange Money : *144# → Marchand → Lien de paiement
                 </p>
               </div>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </motion.div>
+            )}
+            <div>
+              <Label htmlFor="phone-number" className="text-xs font-semibold">Numéro de téléphone (optionnel)</Label>
+              <Input
+                id="phone-number"
+                placeholder="+225 07 12 34 56"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="mt-1"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">Pour afficher sur la page de paiement</p>
+            </div>
+
+            {editingProvider !== "Paiement à la livraison" && linkUrl && (
+              <div className="p-3 rounded-lg bg-muted/50 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-white border flex items-center justify-center flex-shrink-0">
+                  <QrCode className="w-6 h-6 text-slate-700" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold">Aperçu QR code</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{linkUrl}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowModal(false)}>Annuler</Button>
+            <Button onClick={handleSave} disabled={saving} className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              {saving ? "Sauvegarde..." : "Connecter"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

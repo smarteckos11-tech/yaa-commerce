@@ -386,3 +386,30 @@ create policy "Owners can manage reviews" on public.product_reviews
 
 create index if not exists idx_reviews_product_id on public.product_reviews(product_id);
 create index if not exists idx_reviews_status on public.product_reviews(status);
+
+-- ============================================================
+-- 18. PAYMENT_LINKS (liens QR code par opérateur pour chaque marchand)
+-- ============================================================
+create table if not exists public.payment_links (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles on delete cascade not null,
+  provider text not null,
+  link_url text not null,
+  phone_number text,
+  qr_code_url text,
+  is_active boolean default true,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  unique(user_id, provider)
+);
+
+alter table public.payment_links enable row level security;
+
+create policy "Users can view own payment links" on public.payment_links
+  for select using (auth.uid() = user_id);
+create policy "Users can insert own payment links" on public.payment_links
+  for insert with check (auth.uid() = user_id);
+create policy "Users can update own payment links" on public.payment_links
+  for update using (auth.uid() = user_id);
+create policy "Users can delete own payment links" on public.payment_links
+  for delete using (auth.uid() = user_id);
