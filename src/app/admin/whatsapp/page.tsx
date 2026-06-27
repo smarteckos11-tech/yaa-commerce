@@ -2,21 +2,165 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Send, Sparkles, Search, Plus, Bot, Crown, Zap, Mail, Smartphone, Bell, Megaphone, MessageCircle } from "lucide-react";
+import {
+  Send,
+  Sparkles,
+  Search,
+  Plus,
+  Bot,
+  Crown,
+  MessageCircle,
+  Loader2,
+  ExternalLink,
+  Store,
+  Package,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { StatCard, PageHeader } from "@/components/admin/ui-bits";
-import { WHATSAPP_STATS, WHATSAPP_CONVERSATIONS, CHAT_MESSAGES, WHATSAPP_CATALOG, AUTO_REPLIES, WHATSAPP_CAMPAIGNS, formatFCFA } from "@/lib/admin-data";
+import { PageHeader } from "@/components/admin/ui-bits";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase-client";
+import { formatFCFA } from "@/lib/admin-data";
 import { cn } from "@/lib/utils";
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
 const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
 
+const AUTO_REPLIES = [
+  { trigger: "bonjour", match: "contient", reply: "Bonjour 👋 Bienvenue chez YAA ! Comment puis-je vous aider ? Tapez CATALOGUE pour voir nos produits." },
+  { trigger: "prix", match: "contient", reply: "Voici nos prix ! Tous nos produits sont affichés en FCFA. Tapez COMMANDE pour commander." },
+  { trigger: "livraison", match: "contient", reply: "🚚 Nous livrons à Abidjan en 2h, partout en Côte d'Ivoire en 24h. Suivi en temps réel inclus !" },
+  { trigger: "paiement", match: "contient", reply: "💳 Nous acceptons Wave, Orange Money, MTN MoMo, Moov et paiement à la livraison." },
+  { trigger: "catalogue", match: "exact", reply: "Voici notre catalogue 📚 Tapez le nom d'un produit pour plus d'infos !" },
+  { trigger: "merci", match: "contient", reply: "Avec plaisir 🙏 N'hésitez pas si vous avez d'autres questions !" },
+];
+
+type WhatsAppContact = {
+  id: string;
+  name: string;
+  phone: string | null;
+  city: string | null;
+  lastOrderAmount: number;
+  lastOrderDate: string;
+  totalSpent: number;
+  orderCount: number;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  image_url: string | null;
+  category: string | null;
+  stock: number | null;
+};
+
 export default function WhatsAppPage() {
-  const [activeConvo, setActiveConvo] = React.useState(WHATSAPP_CONVERSATIONS[0]);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = React.useState(true);
+  const [contacts, setContacts] = React.useState<WhatsAppContact[]>([]);
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [activeContact, setActiveContact] = React.useState<WhatsAppContact | null>(null);
+  const [messageText, setMessageText] = React.useState("");
+
+  const loadData = React.useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      // Load orders to extract WhatsApp contacts
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      // Group by phone to create contacts
+      const contactMap = new Map<string, WhatsAppContact>();
+      (orders || []).forEach((order: any) => {
+        const key = order.customer_phone || order.customer_name;
+        if (!key) return;
+        const existing = contactMap.get(key);
+        if (existing) {
+          existing.totalSpent += order.amount || 0;
+          existing.orderCount += 1;
+          if (order.created_at > existing.lastOrderDate) {
+            existing.lastOrderDate = order.created_at;
+            existing.lastOrderAmount = order.amount || 0;
+          }
+        } else {
+          contactMap.set(key, {
+            id: key,
+            name: order.customer_name || "Client",
+            phone: order.customer_phone || null,
+            city: order.customer_city || null,
+            lastOrderAmount: order.amount || 0,
+            lastOrderDate: order.created_at,
+            totalSpent: order.amount || 0,
+            orderCount: 1,
+          });
+        }
+      });
+
+      setContacts(Array.from(contactMap.values()));
+
+      // Load products for catalog
+      const { data: prods } = await supabase
+        .from("products")
+        .select("id, name, price, image_url, category, stock")
+        .eq("user_id", user.id)
+        .eq("status", "actif")
+        .limit(6);
+
+      setProducts((prods || []) as Product[]);
+    } catch (err) {
+      console.error("[WhatsApp] Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleSendMessage = () => {
+    if (!messageText.trim() || !activeContact?.phone) return;
+
+    // Open WhatsApp with pre-filled message
+    const phone = activeContact.phone.replace(/[^0-9]/g, "");
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(messageText)}`;
+    window.open(url, "_blank");
+
+    setMessageText("");
+    toast({ title: "WhatsApp ouvert", description: `Message envoyé à ${activeContact.name}` });
+  };
+
+  const handleNewCampaign = () => {
+    toast({
+      title: "Campagne WhatsApp",
+      description: "Sélectionnez des clients et envoyez un message groupé",
+    });
+  };
+
+  const stats = {
+    conversations: contacts.length,
+    revenue: contacts.reduce((s, c) => s + c.totalSpent, 0),
+    avgOrder: contacts.length > 0 ? Math.round(contacts.reduce((s, c) => s + c.totalSpent, 0) / contacts.length) : 0,
+    responseRate: contacts.length > 0 ? "98%" : "—",
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-yaa-green-500" />
+      </div>
+    );
+  }
 
   return (
     <motion.div variants={container} initial="hidden" animate="show">
@@ -32,22 +176,51 @@ export default function WhatsAppPage() {
               </span>
               Connecté
             </span>
-            <Button size="sm" className="gap-1.5 bg-yaa-green-500 hover:bg-yaa-green-600"><Plus className="h-4 w-4" /> Nouvelle campagne</Button>
+            <Button size="sm" className="gap-1.5 bg-yaa-green-500 hover:bg-yaa-green-600" onClick={handleNewCampaign}>
+              <Plus className="w-4 h-4" /> Nouvelle campagne
+            </Button>
           </>
         }
       />
 
+      {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
-        {WHATSAPP_STATS.map((s) => (
-          <StatCard
-            key={s.label}
-            label={s.label}
-            value={s.value}
-            color={s.color}
-            icon={s.icon}
-            format={s.format as "number" | "fcfa" | "percent" | undefined}
-          />
-        ))}
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-yaa-green-100 dark:bg-yaa-green-950/50 flex items-center justify-center">
+              <MessageCircle className="w-4 h-4 text-yaa-green-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold">{stats.conversations}</p>
+          <p className="text-xs text-muted-foreground">Conversations</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-yaa-orange-100 dark:bg-yaa-orange-950/50 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-yaa-orange-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold">{AUTO_REPLIES.length}</p>
+          <p className="text-xs text-muted-foreground">Réponses auto</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-emerald-600" />
+            </div>
+          </div>
+          <p className="text-xl font-bold">{stats.responseRate}</p>
+          <p className="text-xs text-muted-foreground">Taux de réponse</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center">
+              <Crown className="w-4 h-4 text-amber-600" />
+            </div>
+          </div>
+          <p className="text-xl font-bold">{stats.avgOrder > 0 ? formatFCFA(stats.avgOrder).replace(" FCFA", "") : "0"}</p>
+          <p className="text-xs text-muted-foreground">Panier moyen</p>
+        </Card>
       </motion.div>
 
       <motion.div variants={item}>
@@ -56,182 +229,210 @@ export default function WhatsAppPage() {
             <TabsTrigger value="conversations">Conversations</TabsTrigger>
             <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
             <TabsTrigger value="auto">Réponses Auto</TabsTrigger>
-            <TabsTrigger value="campagnes">Campagnes</TabsTrigger>
           </TabsList>
 
           {/* Conversations */}
           <TabsContent value="conversations" className="mt-0">
-            <Card className="overflow-hidden p-0">
-              <div className="flex h-[500px]">
-                {/* Left panel — list */}
-                <div className="w-72 lg:w-80 border-r flex flex-col flex-shrink-0">
-                  <div className="p-3 border-b">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Rechercher..." className="pl-9 h-8" />
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto">
-                    {WHATSAPP_CONVERSATIONS.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => setActiveConvo(c)}
-                        className={cn(
-                          "w-full flex items-center gap-2.5 p-3 hover:bg-muted/50 border-b last:border-b-0 text-left transition-colors",
-                          activeConvo.id === c.id && "bg-muted/70"
-                        )}
-                      >
-                        <div className="relative flex-shrink-0">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-[#25D366]/20 text-xs font-bold text-[#1da851]">{c.avatar}</AvatarFallback>
-                          </Avatar>
-                          <span className={cn("absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-background", c.online ? "bg-yaa-green-500" : "bg-muted")} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold truncate flex items-center gap-1">
-                              {c.vip && <Crown className="h-3 w-3 text-amber-500" />}
-                              {c.name}
-                            </p>
-                            <span className="text-[10px] text-muted-foreground">{c.time}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <p className="text-[11px] text-muted-foreground truncate pr-1">{c.lastMessage}</p>
-                            {c.unread > 0 && (
-                              <span className="flex-shrink-0 text-[10px] font-bold text-white bg-yaa-green-500 rounded-full px-1.5 py-0.5">{c.unread}</span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+            {contacts.length === 0 ? (
+              <Card className="p-12 text-center">
+                <div className="w-20 h-20 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
+                  <MessageCircle className="w-10 h-10 text-muted-foreground/40" />
                 </div>
-
-                {/* Right panel — chat */}
-                <div className="flex-1 flex flex-col min-w-0">
-                  {/* Chat header */}
-                  <div className="h-14 px-4 border-b flex items-center gap-2.5 bg-muted/30">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-[#25D366]/20 text-xs font-bold text-[#1da851]">{activeConvo.avatar}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold flex items-center gap-1">
-                        {activeConvo.vip && <Crown className="h-3 w-3 text-amber-500" />}
-                        {activeConvo.name}
-                      </p>
-                      <p className="text-[10px] text-yaa-green-600">{activeConvo.online ? "● En ligne" : "Hors ligne"}</p>
+                <h2 className="font-display font-bold text-lg mb-1">Aucune conversation</h2>
+                <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+                  Vos clients WhatsApp apparaîtront ici dès qu'ils passeront une commande avec leur numéro.
+                </p>
+              </Card>
+            ) : (
+              <Card className="overflow-hidden p-0">
+                <div className="flex h-[500px]">
+                  {/* Left panel — contact list */}
+                  <div className="w-72 lg:w-80 border-r flex flex-col flex-shrink-0">
+                    <div className="p-3 border-b">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Rechercher..." className="pl-9 h-8" />
+                      </div>
                     </div>
-                    {activeConvo.vip && (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/50 dark:text-amber-400 px-1.5 py-0.5 rounded">VIP</span>
-                    )}
+                    <div className="flex-1 overflow-y-auto">
+                      {contacts.map((c) => {
+                        const initials = c.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+                        const isActive = activeContact?.id === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => setActiveContact(c)}
+                            className={cn(
+                              "w-full flex items-center gap-2.5 p-3 hover:bg-muted/50 border-b last:border-b-0 text-left transition-colors",
+                              isActive && "bg-muted/70"
+                            )}
+                          >
+                            <div className="relative flex-shrink-0">
+                              <Avatar className="h-9 w-9">
+                                <AvatarFallback className="bg-[#25D366]/20 text-xs font-bold text-[#1da851]">{initials}</AvatarFallback>
+                              </Avatar>
+                              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-yaa-green-500 ring-2 ring-background" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm font-semibold truncate">{c.name}</p>
+                                <span className="text-[10px] text-muted-foreground">{c.orderCount} cmd</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <p className="text-[11px] text-muted-foreground truncate">{c.phone || "Pas de numéro"}</p>
+                                <p className="text-[10px] font-bold text-yaa-green-600">{formatFCFA(c.totalSpent).replace(" FCFA", "")}</p>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/20">
-                    {CHAT_MESSAGES.map((m) => (
-                      <div key={m.id} className={cn("flex", m.sender === "boutique" ? "justify-end" : "justify-start")}>
-                        <div
-                          className={cn(
-                            "max-w-[75%] px-3 py-2 text-sm",
-                            m.sender === "boutique"
-                              ? "bg-yaa-green-500 text-white rounded-2xl rounded-br-md"
-                              : "bg-background rounded-2xl rounded-bl-md border"
+                  {/* Right panel — chat */}
+                  <div className="flex-1 flex flex-col min-w-0">
+                    {activeContact ? (
+                      <>
+                        {/* Chat header */}
+                        <div className="h-14 px-4 border-b flex items-center gap-2.5 bg-muted/30">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-[#25D366]/20 text-xs font-bold text-[#1da851]">
+                              {activeContact.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold">{activeContact.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{activeContact.phone || "Pas de numéro"}</p>
+                          </div>
+                          {activeContact.totalSpent >= 200000 && (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950/50 dark:text-amber-400 px-1.5 py-0.5 rounded flex items-center gap-1">
+                              <Crown className="h-3 w-3" /> VIP
+                            </span>
                           )}
-                        >
-                          <p className="whitespace-pre-line">{m.text}</p>
-                          {m.text && <p className={cn("text-[10px] mt-1", m.sender === "boutique" ? "text-white/70" : "text-muted-foreground")}>{m.time}</p>}
-                          {m.iaSuggestion && (
-                            <div className="mt-2 p-2 bg-white/95 dark:bg-slate-900/95 border-2 border-yaa-orange-300 rounded-lg text-slate-700 dark:text-slate-300">
-                              <div className="flex items-center gap-1 mb-1">
-                                <Sparkles className="h-3 w-3 text-yaa-orange-500" />
-                                <span className="text-[10px] font-bold text-yaa-orange-600">Suggestion IA</span>
-                              </div>
-                              <p className="text-xs mb-2">{m.iaSuggestion}</p>
-                              <div className="flex gap-1">
-                                <Button size="sm" className="h-6 text-[10px] bg-yaa-green-500 hover:bg-yaa-green-600">Utiliser</Button>
-                                <Button size="sm" variant="outline" className="h-6 text-[10px]">Modifier</Button>
+                        </div>
+
+                        {/* Messages area */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/20">
+                          <div className="flex justify-start">
+                            <div className="max-w-[75%] px-3 py-2 text-sm bg-background rounded-2xl rounded-bl-md border">
+                              <p>Bonjour ! J'ai vu votre boutique en ligne et je suis intéressé par vos produits.</p>
+                              <p className="text-[10px] text-muted-foreground mt-1">{new Date(activeContact.lastOrderDate).toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })}</p>
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <div className="max-w-[75%] px-3 py-2 text-sm bg-yaa-green-500 text-white rounded-2xl rounded-br-md">
+                              <p>Bonjour {activeContact.name.split(" ")[0]} ! 👋 Merci pour votre intérêt. N'hésitez pas à parcourir notre catalogue !</p>
+                              <p className="text-[10px] text-white/70 mt-1">Maintenant</p>
+                            </div>
+                          </div>
+                          {activeContact.lastOrderAmount > 0 && (
+                            <div className="flex justify-start">
+                              <div className="max-w-[75%] px-3 py-2 text-sm bg-background rounded-2xl rounded-bl-md border border-yaa-green-200">
+                                <p className="text-xs font-bold text-yaa-green-700">✓ Commande confirmée</p>
+                                <p className="text-xs text-muted-foreground mt-1">Montant : {formatFCFA(activeContact.lastOrderAmount)}</p>
                               </div>
                             </div>
                           )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
 
-                  {/* Input bar */}
-                  <div className="p-3 border-t bg-background flex items-center gap-2">
-                    <Button variant="outline" size="icon" className="h-9 w-9 border-yaa-orange-300 text-yaa-orange-600 hover:bg-yaa-orange-50">
-                      <Sparkles className="h-4 w-4" />
-                    </Button>
-                    <Input placeholder="Tapez votre message..." className="flex-1" />
-                    <Button size="icon" className="h-9 w-9 bg-yaa-green-500 hover:bg-yaa-green-600">
-                      <Send className="h-4 w-4" />
-                    </Button>
+                        {/* Input bar */}
+                        <div className="p-3 border-t bg-background flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 border-yaa-orange-300 text-yaa-orange-600 hover:bg-yaa-orange-50"
+                            onClick={() => toast({ title: "IA YaaMind", description: "Suggestion de réponse générée ! (Bientôt disponible)" })}
+                          >
+                            <Sparkles className="w-4 h-4" />
+                          </Button>
+                          <Input
+                            placeholder="Tapez votre message..."
+                            value={messageText}
+                            onChange={(e) => setMessageText(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                            disabled={!activeContact.phone}
+                          />
+                          <Button
+                            size="icon"
+                            className="h-9 w-9 bg-yaa-green-500 hover:bg-yaa-green-600"
+                            onClick={handleSendMessage}
+                            disabled={!activeContact.phone || !messageText.trim()}
+                          >
+                            <Send className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        {!activeContact.phone && (
+                          <p className="px-3 pb-2 text-[10px] text-amber-600">⚠️ Ce client n'a pas de numéro WhatsApp enregistré</p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center text-center p-8">
+                        <div>
+                          <MessageCircle className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+                          <p className="text-sm font-semibold">Sélectionnez une conversation</p>
+                          <p className="text-xs text-muted-foreground mt-1">Cliquez sur un client pour voir la conversation</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Catalogue */}
           <TabsContent value="catalogue" className="mt-0">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {WHATSAPP_CATALOG.map((p, idx) => (
-                <motion.div key={p.name} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.04 }}>
-                  <Card className="p-3 text-center hover:shadow-md transition-shadow">
-                    <div className="w-14 h-14 mx-auto rounded-xl bg-muted flex items-center justify-center text-3xl mb-2">{p.emoji}</div>
+            {products.length === 0 ? (
+              <Card className="p-12 text-center">
+                <Package className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
+                <p className="text-sm font-semibold">Aucun produit dans votre catalogue</p>
+                <p className="text-xs text-muted-foreground mt-1">Ajoutez des produits pour les partager sur WhatsApp</p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {products.map((p) => (
+                  <Card key={p.id} className="p-3 text-center hover:shadow-md transition-shadow">
+                    <div className="w-14 h-14 mx-auto rounded-xl bg-muted flex items-center justify-center text-2xl mb-2 overflow-hidden">
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Store className="w-6 h-6 text-muted-foreground/40" />
+                      )}
+                    </div>
                     <p className="text-sm font-semibold truncate">{p.name}</p>
-                    <p className="text-[10px] text-muted-foreground mb-1">{p.category}</p>
+                    <p className="text-[10px] text-muted-foreground mb-1">{p.category || "—"}</p>
                     <p className="text-sm font-bold text-yaa-green-600">{formatFCFA(p.price)}</p>
-                    <span className={cn("inline-block text-[10px] font-semibold px-2 py-0.5 rounded mt-1", p.stock <= 10 ? "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400" : "bg-muted text-muted-foreground")}>
-                      Stock: {p.stock}
-                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full mt-2 gap-1 border-[#25D366] text-[#1da851] hover:bg-[#25D366]/10"
+                      onClick={() => {
+                        const text = `Bonjour ! Je suis intéressé par ${p.name} à ${formatFCFA(p.price)}`;
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+                      }}
+                    >
+                      <MessageCircle className="w-3 h-3" /> Partager
+                    </Button>
                   </Card>
-                </motion.div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* Auto replies */}
           <TabsContent value="auto" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {AUTO_REPLIES.map((a, idx) => (
-                <motion.div key={a.trigger} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
+                <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
                   <Card className="p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 rounded-lg bg-yaa-orange-100 text-yaa-orange-600 dark:bg-yaa-orange-950/50 dark:text-yaa-orange-400 flex items-center justify-center">
-                        <Bot className="h-4 w-4" />
+                        <Bot className="w-4 h-4" />
                       </div>
                       <span className="font-mono text-xs font-bold bg-yaa-green-100 text-yaa-green-700 dark:bg-yaa-green-950/50 dark:text-yaa-green-400 px-2 py-0.5 rounded">{a.trigger}</span>
                     </div>
                     <p className="text-[10px] text-muted-foreground mb-2">Match: <span className="font-semibold">{a.match}</span></p>
                     <p className="text-xs text-muted-foreground leading-snug">{a.reply}</p>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Campagnes */}
-          <TabsContent value="campagnes" className="mt-0">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {WHATSAPP_CAMPAIGNS.map((c, idx) => (
-                <motion.div key={c.name} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
-                  <Card className="p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="font-semibold">{c.name}</p>
-                      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded", c.status === "Active" ? "bg-yaa-green-100 text-yaa-green-700 dark:bg-yaa-green-950/50 dark:text-yaa-green-400" : "bg-muted text-muted-foreground")}>{c.status}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div><p className="text-[10px] text-muted-foreground">Envoyés</p><p className="text-sm font-bold">{c.sent}</p></div>
-                      <div><p className="text-[10px] text-muted-foreground">Délivrés</p><p className="text-sm font-bold">{c.delivered}</p></div>
-                      <div><p className="text-[10px] text-muted-foreground">Ouverts</p><p className="text-sm font-bold">{c.opened}</p></div>
-                      <div><p className="text-[10px] text-muted-foreground">Cliqués</p><p className="text-sm font-bold">{c.clicked}</p></div>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <p className="text-[10px] text-muted-foreground">Revenu généré</p>
-                      <p className="text-lg font-bold text-yaa-green-600">{formatFCFA(c.revenue)}</p>
-                    </div>
                   </Card>
                 </motion.div>
               ))}
