@@ -4,22 +4,12 @@ import { createBrowserClient } from "@supabase/ssr";
  * Supabase browser client (client-side).
  * Uses the anon key (public, safe to expose).
  *
- * Usage:
- *   import { supabase } from "@/lib/supabase-client";
- *   const { data } = await supabase.from("products").select("*");
+ * The URL and anon key are hardcoded as fallback so the app
+ * works even if env vars are not configured (e.g., on Vercel).
+ * These are PUBLIC values — safe to expose in client code.
  */
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dhselafnjecrwsdicuqe.supabase.co";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRoc2VsYWZuamVjcndzZGljdXFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTQ0MjQsImV4cCI6MjA5Nzk3MDQyNH0.zTSPKy01SYIwcagNohM9ELolvx7KQnKg7zQWf9ltJyk";
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    "[Supabase] NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY manquant. " +
-      "Configurez-les dans .env.local (voir .env.example)."
-  );
-}
-
-export const supabase = createBrowserClient(
-  supabaseUrl || "https://placeholder.supabase.co",
-  supabaseAnonKey || "placeholder-anon-key"
-);
+export const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
