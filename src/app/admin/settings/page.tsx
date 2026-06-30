@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Loader2,
   Upload,
+  Lock,
   Image as ImageIcon,
   Link2,
   Save,
@@ -72,6 +73,12 @@ export default function SettingsPage() {
   const [notifPush, setNotifPush] = React.useState(true);
   const [notifWhatsapp, setNotifWhatsapp] = React.useState(true);
 
+  // Password change
+  const [currentPassword, setCurrentPassword] = React.useState("");
+  const [newPassword, setNewPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [changingPassword, setChangingPassword] = React.useState(false);
+
   const handleTestCloudinary = async () => {
     if (!cloudName || !apiKey || !apiSecret) {
       toast({ title: "Champs manquants", description: "Remplissez cloud name, API key et secret", variant: "destructive" });
@@ -104,6 +111,34 @@ export default function SettingsPage() {
 
   const handleSaveGeneral = () => {
     toast({ title: "Paramètres sauvegardés", description: "Vos modifications ont été enregistrées." });
+  };
+
+  // Change password via Supabase
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword !== confirmPassword || newPassword.length < 6) return;
+
+    setChangingPassword(true);
+    try {
+      const { supabase } = await import("@/lib/supabase-client");
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      toast({ title: "Mot de passe changé ✓", description: "Votre nouveau mot de passe est actif." });
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Impossible de changer le mot de passe",
+        variant: "destructive",
+      });
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   return (
@@ -412,6 +447,75 @@ export default function SettingsPage() {
             <Card className="p-5 lg:p-6 max-w-2xl">
               <h2 className="font-display font-semibold mb-4">Sécurité du compte</h2>
               <div className="space-y-4">
+                {/* Change password */}
+                <div className="p-4 rounded-lg border-2 border-yaa-green-200 bg-yaa-green-50/50 dark:bg-yaa-green-950/20">
+                  <p className="text-sm font-semibold text-yaa-green-700 mb-3 flex items-center gap-2">
+                    <Lock className="w-4 h-4" /> Changer le mot de passe
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="current-password" className="text-xs font-semibold">Mot de passe actuel</Label>
+                      <div className="relative mt-1">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="current-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="new-password" className="text-xs font-semibold">Nouveau mot de passe</Label>
+                        <div className="relative mt-1">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="new-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="pl-9"
+                            minLength={6}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="confirm-password" className="text-xs font-semibold">Confirmer</Label>
+                        <div className="relative mt-1">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="confirm-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="pl-9"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {newPassword && newPassword.length < 6 && (
+                      <p className="text-[10px] text-rose-600">Le mot de passe doit contenir au moins 6 caractères.</p>
+                    )}
+                    {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                      <p className="text-[10px] text-rose-600">Les mots de passe ne correspondent pas.</p>
+                    )}
+                    <Button
+                      onClick={handleChangePassword}
+                      disabled={changingPassword || !currentPassword || !newPassword || newPassword !== confirmPassword || newPassword.length < 6}
+                      className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5"
+                    >
+                      {changingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {changingPassword ? "Modification..." : "Changer le mot de passe"}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* 2FA */}
                 <div className="p-4 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200 flex items-start gap-3">
                   <ShieldCheck className="w-5 h-5 text-yaa-green-600 flex-shrink-0 mt-0.5" />
                   <div>
@@ -419,9 +523,11 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Sécurisez votre compte avec un code SMS ou app d'authentification.
                     </p>
-                    <Button variant="outline" size="sm" className="mt-2">Activer 2FA</Button>
+                    <Button variant="outline" size="sm" className="mt-2" onClick={() => toast({ title: "2FA", description: "Configuration 2FA bientôt disponible" })}>Activer 2FA</Button>
                   </div>
                 </div>
+
+                {/* Login history */}
                 <div className="p-4 rounded-lg border border-slate-200">
                   <p className="text-sm font-semibold mb-2">Historique de connexion</p>
                   <div className="space-y-1.5 text-xs">
@@ -435,12 +541,14 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* IP whitelist */}
                 <div className="p-4 rounded-lg border border-slate-200">
                   <p className="text-sm font-semibold mb-2">Liste blanche IP</p>
                   <p className="text-xs text-muted-foreground mb-2">
                     Restreignez l'accès admin à des adresses IP spécifiques.
                   </p>
-                  <Button variant="outline" size="sm">Configurer</Button>
+                  <Button variant="outline" size="sm" onClick={() => toast({ title: "Liste blanche IP", description: "Configuration bientôt disponible" })}>Configurer</Button>
                 </div>
               </div>
             </Card>
