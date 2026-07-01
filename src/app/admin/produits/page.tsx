@@ -141,6 +141,120 @@ export default function ProduitsPage() {
     }
   };
 
+  // Export CSV de tous les produits
+  const handleExportCsv = () => {
+    if (products.length === 0) {
+      toast({ title: "Aucun produit à exporter", variant: "destructive" });
+      return;
+    }
+    const headers = ["name", "sku", "category", "type", "price", "stock", "sold", "status", "description"];
+    const csvRows = [
+      headers.join(","),
+      ...products.map((p) =>
+        headers
+          .map((h) => {
+            const v = (p as any)[h];
+            if (v === null || v === undefined) return "";
+            const s = String(v).replace(/"/g, '""');
+            return s.includes(",") || s.includes("\n") || s.includes('"') ? `"${s}"` : s;
+          })
+          .join(",")
+      ),
+    ];
+    const csv = csvRows.join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `produits-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Export CSV ✓", description: `${products.length} produits exportés` });
+  };
+
+  // Import CSV
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = React.useState(false);
+
+  const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length < 2) {
+        toast({ title: "CSV invalide", description: "Le fichier doit avoir un en-tête + au moins 1 ligne", variant: "destructive" });
+        return;
+      }
+      const parseLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (c === '"' && line[i + 1] === '"') { current += '"'; i++; }
+          else if (c === '"') { inQuotes = !inQuotes; }
+          else if (c === "," && !inQuotes) { result.push(current); current = ""; }
+          else { current += c; }
+        }
+        result.push(current);
+        return result;
+      };
+      const headers = parseLine(lines[0]).map((h) => h.trim().toLowerCase());
+      const nameIdx = headers.indexOf("name");
+      const skuIdx = headers.indexOf("sku");
+      const catIdx = headers.indexOf("category");
+      const typeIdx = headers.indexOf("type");
+      const priceIdx = headers.indexOf("price");
+      const stockIdx = headers.indexOf("stock");
+      const descIdx = headers.indexOf("description");
+      if (nameIdx === -1 || priceIdx === -1) {
+        toast({ title: "CSV invalide", description: "Colonnes requises: name, price", variant: "destructive" });
+        return;
+      }
+      const validCats = ["Mode", "Artisanat", "Beauté", "Digital", "Alimentation", "Mobilier", "Musique"];
+      const rows: any[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseLine(lines[i]);
+        const cat = catIdx >= 0 ? cols[catIdx]?.trim() : "";
+        const category = validCats.includes(cat) ? cat : null;
+        const type = typeIdx >= 0 && cols[typeIdx]?.trim().toLowerCase() === "digital" ? "digital" : "physique";
+        rows.push({
+          user_id: user.id,
+          name: cols[nameIdx]?.trim(),
+          sku: skuIdx >= 0 ? cols[skuIdx]?.trim() || null : null,
+          category,
+          type,
+          price: parseInt(cols[priceIdx]?.trim() || "0") || 0,
+          stock: stockIdx >= 0 && cols[stockIdx]?.trim() !== "" ? parseInt(cols[stockIdx]?.trim()) : null,
+          sold: 0,
+          status: "actif",
+          description: descIdx >= 0 ? cols[descIdx]?.trim() || null : null,
+        });
+      }
+      const valid = rows.filter((r) => r.name && r.price >= 0);
+      if (valid.length === 0) {
+        toast({ title: "Aucun produit valide", variant: "destructive" });
+        return;
+      }
+      const { data, error } = await supabase.from("products").insert(valid).select("*");
+      if (error) throw error;
+      setProducts([...(data || []), ...products] as Product[]);
+      toast({ title: "Import CSV ✓", description: `${valid.length} produits importés` });
+    } catch (err) {
+      toast({ title: "Erreur d'import", description: err instanceof Error ? err.message : "Import impossible", variant: "destructive" });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Modifier un produit — redirige vers le formulaire d'édition pré-rempli
+  const handleEdit = (product: Product) => {
+    router.push(`/admin/produits/nouveau?edit=${product.id}`);
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
       <PageHeader
@@ -148,10 +262,24 @@ export default function ProduitsPage() {
         subtitle="Gérez votre catalogue produits en quelques clics"
         actions={
           <>
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast({ title: "Bientôt disponible", description: "Import CSV en cours de développement" })}>
-              <Upload className="h-4 w-4" /> Import CSV
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleImportCsv}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={importing}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {importing ? "Import..." : "Import CSV"}
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast({ title: "Bientôt disponible", description: "Export en cours de développement" })}>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExportCsv}>
               <Download className="h-4 w-4" /> Exporter
             </Button>
             <Button
@@ -337,7 +465,7 @@ export default function ProduitsPage() {
                               }}>
                                 <Eye className="h-4 w-4 mr-2" /> Voir la fiche
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast({ title: "Bientôt disponible", description: "Édition de produit en cours de développement" })}>
+                              <DropdownMenuItem onClick={() => handleEdit(p)}>
                                 <Pencil className="h-4 w-4 mr-2" /> Modifier
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDelete(p.id, p.name)} className="text-rose-600">

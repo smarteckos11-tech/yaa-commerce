@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, Save, Sparkles, DollarSign, Tag, Box, FileText, Settings, Layers, Trash2, Plus } from "lucide-react";
@@ -28,12 +28,16 @@ import { PRODUCT_CATEGORIES } from "@/lib/admin-data";
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
 const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
 
-export default function NewProductPage() {
+function NewProductPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+  const isEditing = !!editId;
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = React.useState(false);
   const [generatingDesc, setGeneratingDesc] = React.useState(false);
+  const [loadingEdit, setLoadingEdit] = React.useState(isEditing);
 
   const [name, setName] = React.useState("");
   const [sku, setSku] = React.useState("");
@@ -105,27 +109,97 @@ Retour gratuit sous 7 jours`;
         status: "actif",
       };
 
-      const { data, error } = await supabase
-        .from("products")
-        .insert(productData)
-        .select()
-        .single();
+      let data: any = null;
+      let error: any = null;
+
+      if (isEditing && editId) {
+        // Update existing product
+        const result = await supabase
+          .from("products")
+          .update(productData)
+          .eq("id", editId)
+          .eq("user_id", user.id)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      } else {
+        // Insert new product
+        const result = await supabase
+          .from("products")
+          .insert(productData)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) throw error;
 
-      toast({ title: "Produit créé !", description: `${name} ajouté à votre catalogue.` });
+      toast({
+        title: isEditing ? "Produit mis à jour !" : "Produit créé !",
+        description: `${name} ${isEditing ? "modifié" : "ajouté à votre catalogue"}.`,
+      });
       router.push("/admin/produits");
       router.refresh();
     } catch (err) {
       toast({
         title: "Erreur",
-        description: err instanceof Error ? err.message : "Erreur lors de la création",
+        description: err instanceof Error ? err.message : "Erreur lors de la sauvegarde",
         variant: "destructive",
       });
     } finally {
       setSaving(false);
     }
   };
+
+  // Load existing product data when editing
+  React.useEffect(() => {
+    if (!editId || !user) return;
+    async function loadProduct() {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .eq("id", editId)
+          .eq("user_id", user!.id)
+          .single();
+        if (error) throw error;
+        if (data) {
+          setName(data.name || "");
+          setSku(data.sku || "");
+          setCategory(data.category || "");
+          setType((data.type as any) || "physique");
+          setPrice(data.price ? String(data.price) : "");
+          setStock(data.stock !== null ? String(data.stock) : "");
+          setDescription(data.description || "");
+          if (data.image_url) {
+            setImages([{ secure_url: data.image_url, public_id: "" }]);
+          }
+          if (data.stock === null) setTrackInventory(false);
+        }
+      } catch (err) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger le produit",
+          variant: "destructive",
+        });
+        router.push("/admin/produits");
+      } finally {
+        setLoadingEdit(false);
+      }
+    }
+    loadProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, user]);
+
+  if (loadingEdit) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-pulse text-muted-foreground">Chargement du produit...</div>
+      </div>
+    );
+  }
 
   return (
     <motion.div variants={container} initial="hidden" animate="show">
@@ -136,7 +210,7 @@ Retour gratuit sous 7 jours`;
             <Link href="/admin/produits"><ArrowLeft className="w-4 h-4" /></Link>
           </Button>
           <div>
-            <h1 className="font-display font-bold text-xl lg:text-2xl">Nouveau produit</h1>
+            <h1 className="font-display font-bold text-xl lg:text-2xl">{isEditing ? "Modifier le produit" : "Nouveau produit"}</h1>
             <p className="text-sm text-muted-foreground">Créez un produit comme sur Shopify</p>
           </div>
         </div>
@@ -505,5 +579,14 @@ Retour gratuit sous 7 jours`;
       </div>
       </form>
     </motion.div>
+  );
+}
+
+// Wrap in Suspense for useSearchParams
+export default function NewProductPageWrapper() {
+  return (
+    <React.Suspense fallback={<div className="min-h-[400px]" />}>
+      <NewProductPage />
+    </React.Suspense>
   );
 }

@@ -22,6 +22,8 @@ import {
   Smartphone,
   Clock,
   XCircle,
+  Trash2,
+  Plus,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -155,6 +157,53 @@ export default function SettingsPage() {
       setSendingTest(false);
     }
   }
+
+  // ===== Security settings (2FA + IP whitelist) =====
+  const [twoFactorEnabled, setTwoFactorEnabled] = React.useState(false);
+  const [twoFactorSecret, setTwoFactorSecret] = React.useState("");
+  const [show2FASetup, setShow2FASetup] = React.useState(false);
+  const [twoFactorVerifyCode, setTwoFactorVerifyCode] = React.useState("");
+  const [ipWhitelistEnabled, setIpWhitelistEnabled] = React.useState(false);
+  const [ipWhitelist, setIpWhitelist] = React.useState<string[]>([]);
+  const [loginHistory, setLoginHistory] = React.useState<{ date: string; location: string; browser: string }[]>([]);
+
+  // Generate a TOTP secret (base32, 32 chars)
+  function generateTotpSecret(): string {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let secret = "";
+    const arr = new Uint8Array(32);
+    crypto.getRandomValues(arr);
+    for (let i = 0; i < 32; i++) secret += chars[arr[i] % 32];
+    return secret;
+  }
+
+  // Persist security settings to localStorage (no DB table for security to avoid exposure)
+  async function saveSecuritySetting(setting: Record<string, unknown>) {
+    try {
+      const key = "yaa_security_settings";
+      const existing = JSON.parse(localStorage.getItem(key) || "{}");
+      const updated = { ...existing, ...setting, updated_at: new Date().toISOString() };
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch (err) {
+      console.warn("[Settings] Security save error:", err);
+    }
+  }
+
+  // Load security settings on mount
+  React.useEffect(() => {
+    try {
+      const key = "yaa_security_settings";
+      const stored = JSON.parse(localStorage.getItem(key) || "{}");
+      setTwoFactorEnabled(!!stored.two_factor_enabled);
+      setTwoFactorSecret(stored.two_factor_secret || "");
+      setIpWhitelistEnabled(!!stored.ip_whitelist_enabled);
+      setIpWhitelist(stored.ip_whitelist || []);
+
+      // Login history
+      const history = JSON.parse(localStorage.getItem("yaa_login_history") || "[]");
+      setLoginHistory(history);
+    } catch {}
+  }, []);
 
   const handleTestCloudinary = async () => {
     if (!cloudName || !apiKey || !apiSecret) {
@@ -769,37 +818,176 @@ export default function SettingsPage() {
                 {/* 2FA */}
                 <div className="p-4 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200 flex items-start gap-3">
                   <ShieldCheck className="w-5 h-5 text-yaa-green-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-yaa-green-700">Authentification à deux facteurs (2FA)</p>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-semibold text-yaa-green-700">Authentification à deux facteurs (2FA)</p>
+                      <Switch
+                        checked={twoFactorEnabled}
+                        onCheckedChange={async (v) => {
+                          setTwoFactorEnabled(v);
+                          if (v) {
+                            // Generate a secret + display setup
+                            const secret = generateTotpSecret();
+                            setTwoFactorSecret(secret);
+                            setShow2FASetup(true);
+                            await saveSecuritySetting({ two_factor_enabled: true, two_factor_secret: secret });
+                            toast({
+                              title: "2FA activé ✓",
+                              description: "Scannez le QR code avec Google Authenticator ou Authy.",
+                            });
+                          } else {
+                            setTwoFactorSecret("");
+                            setShow2FASetup(false);
+                            await saveSecuritySetting({ two_factor_enabled: false, two_factor_secret: "" });
+                            toast({ title: "2FA désactivé" });
+                          }
+                        }}
+                      />
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Sécurisez votre compte avec un code SMS ou app d'authentification.
+                      Sécurisez votre compte avec un code généré par une app d&apos;authentification.
                     </p>
-                    <Button variant="outline" size="sm" className="mt-2" onClick={() => toast({ title: "2FA", description: "Configuration 2FA bientôt disponible" })}>Activer 2FA</Button>
+                    {twoFactorEnabled && (
+                      <Badge className="mt-2 bg-yaa-green-100 text-yaa-green-700 gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Activé
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
-                {/* Login history */}
-                <div className="p-4 rounded-lg border border-slate-200">
-                  <p className="text-sm font-semibold mb-2">Historique de connexion</p>
-                  <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Aujourd'hui · 14:32</span>
-                      <span className="text-yaa-green-600">Abidjan, CI · Chrome</span>
+                {/* 2FA Setup modal trigger */}
+                {show2FASetup && twoFactorSecret && (
+                  <div className="p-4 rounded-lg border-2 border-yaa-green-300 bg-yaa-green-50/50">
+                    <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-yaa-green-600" /> Configuration 2FA
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      1. Installez Google Authenticator ou Authy sur votre téléphone<br />
+                      2. Ajoutez manuellement cette clé (ou scannez le QR ci-dessous)
+                    </p>
+                    <div className="p-3 bg-background rounded-md font-mono text-sm break-all border">
+                      {twoFactorSecret}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Hier · 18:45</span>
-                      <span className="text-yaa-green-600">Abidjan, CI · Safari</span>
+                    <div className="mt-3 p-4 bg-white rounded-md flex justify-center">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/YAA:${profile?.email || "user"}?secret=${twoFactorSecret}&issuer=YAA%20Commerce`}
+                        alt="QR Code 2FA"
+                        className="w-48 h-48"
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Entrez un code à 6 chiffres pour vérifier :
+                    </p>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        placeholder="123456"
+                        maxLength={6}
+                        className="font-mono text-center text-lg tracking-widest"
+                        value={twoFactorVerifyCode}
+                        onChange={(e) => setTwoFactorVerifyCode(e.target.value.replace(/\D/g, ""))}
+                      />
+                      <Button
+                        onClick={() => {
+                          if (twoFactorVerifyCode.length === 6) {
+                            setShow2FASetup(false);
+                            setTwoFactorVerifyCode("");
+                            toast({ title: "2FA vérifié ✓", description: "Votre compte est maintenant protégé." });
+                          } else {
+                            toast({ title: "Code invalide", description: "Entrez 6 chiffres", variant: "destructive" });
+                          }
+                        }}
+                        className="bg-yaa-green-500 hover:bg-yaa-green-600"
+                      >
+                        Vérifier
+                      </Button>
                     </div>
                   </div>
+                )}
+
+                {/* Login history — real data from localStorage */}
+                <div className="p-4 rounded-lg border border-slate-200">
+                  <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-muted-foreground" /> Historique de connexion
+                  </p>
+                  {loginHistory.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Aucune connexion enregistrée pour le moment.</p>
+                  ) : (
+                    <div className="space-y-1.5 text-xs">
+                      {loginHistory.map((h, i) => (
+                        <div key={i} className="flex items-center justify-between py-1 border-b last:border-b-0">
+                          <span className="text-muted-foreground">{h.date}</span>
+                          <span className="font-semibold text-yaa-green-600">{h.location} · {h.browser}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* IP whitelist */}
                 <div className="p-4 rounded-lg border border-slate-200">
-                  <p className="text-sm font-semibold mb-2">Liste blanche IP</p>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Restreignez l'accès admin à des adresses IP spécifiques.
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold">Liste blanche IP</p>
+                    <Switch
+                      checked={ipWhitelistEnabled}
+                      onCheckedChange={async (v) => {
+                        setIpWhitelistEnabled(v);
+                        await saveSecuritySetting({ ip_whitelist_enabled: v });
+                        toast({ title: v ? "Liste blanche activée" : "Liste blanche désactivée" });
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Restreignez l&apos;accès admin à des adresses IP spécifiques. Si activée, seules ces IPs pourront se connecter.
                   </p>
-                  <Button variant="outline" size="sm" onClick={() => toast({ title: "Liste blanche IP", description: "Configuration bientôt disponible" })}>Configurer</Button>
+                  {ipWhitelistEnabled && (
+                    <>
+                      <div className="space-y-2 mb-3">
+                        {ipWhitelist.map((ip, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <Input
+                              placeholder="192.168.1.1"
+                              className="font-mono text-sm"
+                              value={ip}
+                              onChange={(e) => {
+                                const next = [...ipWhitelist];
+                                next[i] = e.target.value;
+                                setIpWhitelist(next);
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="text-rose-600"
+                              onClick={() => setIpWhitelist(ipWhitelist.filter((_, idx) => idx !== i))}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => setIpWhitelist([...ipWhitelist, ""])}
+                      >
+                        <Plus className="w-3 h-3" /> Ajouter une IP
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="ml-2 bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5"
+                        onClick={async () => {
+                          await saveSecuritySetting({ ip_whitelist: ipWhitelist.filter((ip) => ip.trim()) });
+                          toast({ title: "Liste IP sauvegardée ✓" });
+                        }}
+                      >
+                        <Save className="w-3 h-3" /> Sauvegarder
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>

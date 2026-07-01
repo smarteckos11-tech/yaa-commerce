@@ -451,3 +451,39 @@ create index if not exists idx_returns_user_id on public.returns(user_id);
 create index if not exists idx_returns_order_id on public.returns(order_id);
 create index if not exists idx_returns_status on public.returns(status);
 create index if not exists idx_returns_created_at on public.returns(created_at desc);
+
+-- ============================================================
+-- 23. MARKETPLACE_EXTENSIONS (extensions installées par boutique)
+-- ============================================================
+create table if not exists public.marketplace_extensions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles on delete cascade not null,
+  extension_name text not null,
+  extension_category text,
+  developer text,
+  price text,
+  status text default 'active' check (status in ('active', 'disabled')),
+  config jsonb default '{}'::jsonb,
+  created_at timestamp with time zone default now()
+);
+
+alter table public.marketplace_extensions enable row level security;
+
+do $$ begin
+  create policy "Users can view own extensions" on public.marketplace_extensions for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Users can insert own extensions" on public.marketplace_extensions for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Users can update own extensions" on public.marketplace_extensions for update using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Users can delete own extensions" on public.marketplace_extensions for delete using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+create index if not exists idx_marketplace_extensions_user_id on public.marketplace_extensions(user_id);
+create index if not exists idx_marketplace_extensions_extension_name on public.marketplace_extensions(extension_name);

@@ -92,6 +92,20 @@ export default function CommandesPage() {
   const [smsMessage, setSmsMessage] = React.useState("");
   const [sendingSms, setSendingSms] = React.useState(false);
 
+  // New order modal state
+  const [newOrderModal, setNewOrderModal] = React.useState(false);
+  const [newOrder, setNewOrder] = React.useState({
+    customerName: "",
+    customerPhone: "",
+    customerCity: "",
+    customerCountry: "Côte d'Ivoire",
+    productName: "",
+    amount: 0,
+    paymentMethod: "Paiement à la livraison",
+    codEnabled: true,
+  });
+  const [creatingOrder, setCreatingOrder] = React.useState(false);
+
   const loadOrders = React.useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -114,6 +128,85 @@ export default function CommandesPage() {
   React.useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  // Export CSV des commandes
+  const handleExportCsv = () => {
+    if (orders.length === 0) {
+      toast({ title: "Aucune commande à exporter", variant: "destructive" });
+      return;
+    }
+    const headers = ["id", "customer_name", "customer_phone", "customer_city", "customer_country", "amount", "payment_method", "status", "cod_enabled", "cod_amount", "cod_status", "created_at"];
+    const csvRows = [
+      headers.join(","),
+      ...orders.map((o) =>
+        headers
+          .map((h) => {
+            const v = (o as any)[h];
+            if (v === null || v === undefined) return "";
+            const s = String(v).replace(/"/g, '""');
+            return s.includes(",") || s.includes("\n") || s.includes('"') ? `"${s}"` : s;
+          })
+          .join(",")
+      ),
+    ];
+    const csv = csvRows.join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `commandes-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Export CSV ✓", description: `${orders.length} commandes exportées` });
+  };
+
+  // Création manuelle d'une commande
+  const handleCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newOrder.customerName || !newOrder.amount) return;
+    setCreatingOrder(true);
+    try {
+      const orderData: any = {
+        user_id: user.id,
+        customer_name: newOrder.customerName,
+        customer_phone: newOrder.customerPhone || null,
+        customer_city: newOrder.customerCity || null,
+        customer_country: newOrder.customerCountry,
+        items: JSON.stringify([
+          { name: newOrder.productName || "Produit", price: newOrder.amount, quantity: 1 },
+        ]),
+        amount: newOrder.amount,
+        payment_method: newOrder.paymentMethod,
+        status: "nouveau",
+        cod_enabled: newOrder.codEnabled,
+        cod_amount: newOrder.codEnabled ? newOrder.amount : null,
+        cod_status: newOrder.codEnabled ? "a_collecter" : null,
+      };
+      const { data, error } = await supabase.from("orders").insert(orderData).select().single();
+      if (error) throw error;
+      setOrders([data as Order, ...orders]);
+      setNewOrderModal(false);
+      setNewOrder({
+        customerName: "",
+        customerPhone: "",
+        customerCity: "",
+        customerCountry: "Côte d'Ivoire",
+        productName: "",
+        amount: 0,
+        paymentMethod: "Paiement à la livraison",
+        codEnabled: true,
+      });
+      toast({ title: "Commande créée ✓", description: `${newOrder.customerName} — ${formatFCFA(newOrder.amount)}` });
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Création impossible",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingOrder(false);
+    }
+  };
 
   // Send automatic SMS notification on status change
   const sendSmsNotification = async (orderId: string, event: string, userId?: string) => {
@@ -250,10 +343,10 @@ export default function CommandesPage() {
         subtitle="Suivez vos commandes en temps réel"
         actions={
           <>
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast({ title: "Export", description: "Export CSV des commandes bientôt disponible" })}>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExportCsv}>
               <Package className="w-4 h-4" /> Exporter
             </Button>
-            <Button size="sm" className="gap-1.5 bg-yaa-green-500 hover:bg-yaa-green-600" onClick={() => toast({ title: "Nouvelle commande", description: "Création manuelle de commande bientôt disponible" })}>
+            <Button size="sm" className="gap-1.5 bg-yaa-green-500 hover:bg-yaa-green-600" onClick={() => setNewOrderModal(true)}>
               <Plus className="w-4 h-4" /> Nouvelle commande
             </Button>
           </>
@@ -468,6 +561,119 @@ export default function CommandesPage() {
               {sendingSms ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi...</> : <><Send className="w-4 h-4" /> Envoyer</>}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Order Modal */}
+      <Dialog open={newOrderModal} onOpenChange={setNewOrderModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Créer une commande manuelle</DialogTitle>
+            <DialogDescription>
+              Ajoutez une commande reçue hors ligne (téléphone, WhatsApp, boutique physique).
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateOrder} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold">Nom du client *</Label>
+                <Input
+                  required
+                  placeholder="Aminata Touré"
+                  className="mt-1"
+                  value={newOrder.customerName}
+                  onChange={(e) => setNewOrder({ ...newOrder, customerName: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Téléphone</Label>
+                <Input
+                  placeholder="+225 07 12 34 56"
+                  className="mt-1"
+                  value={newOrder.customerPhone}
+                  onChange={(e) => setNewOrder({ ...newOrder, customerPhone: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold">Ville</Label>
+                <Input
+                  placeholder="Abidjan"
+                  className="mt-1"
+                  value={newOrder.customerCity}
+                  onChange={(e) => setNewOrder({ ...newOrder, customerCity: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Pays</Label>
+                <Input
+                  className="mt-1"
+                  value={newOrder.customerCountry}
+                  onChange={(e) => setNewOrder({ ...newOrder, customerCountry: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Produit</Label>
+              <Input
+                placeholder="Ex: Boubou royal brodé"
+                className="mt-1"
+                value={newOrder.productName}
+                onChange={(e) => setNewOrder({ ...newOrder, productName: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold">Montant (FCFA) *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  required
+                  placeholder="45000"
+                  className="mt-1"
+                  value={newOrder.amount || ""}
+                  onChange={(e) => setNewOrder({ ...newOrder, amount: Number(e.target.value) })}
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Méthode de paiement</Label>
+                <select
+                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-sm"
+                  value={newOrder.paymentMethod}
+                  onChange={(e) => setNewOrder({ ...newOrder, paymentMethod: e.target.value })}
+                >
+                  <option value="Paiement à la livraison">Paiement à la livraison (COD)</option>
+                  <option value="Wave">Wave</option>
+                  <option value="Orange Money">Orange Money</option>
+                  <option value="MTN MoMo">MTN MoMo</option>
+                  <option value="Moov">Moov</option>
+                  <option value="Carte bancaire">Carte bancaire</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50">
+              <input
+                type="checkbox"
+                id="cod-enabled"
+                checked={newOrder.codEnabled}
+                onChange={(e) => setNewOrder({ ...newOrder, codEnabled: e.target.checked })}
+              />
+              <Label htmlFor="cod-enabled" className="text-xs cursor-pointer">
+                Paiement à la livraison (cash à encaisser par le livreur)
+              </Label>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={() => setNewOrderModal(false)}>Annuler</Button>
+              <Button
+                type="submit"
+                disabled={creatingOrder}
+                className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5"
+              >
+                {creatingOrder ? <><Loader2 className="w-4 h-4 animate-spin" /> Création...</> : <><Plus className="w-4 h-4" /> Créer la commande</>}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </motion.div>
