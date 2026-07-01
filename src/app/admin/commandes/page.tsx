@@ -2,11 +2,21 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Plus, Search, MapPin, MessageCircle, Eye, Banknote, Loader2, ShoppingCart, Package } from "lucide-react";
+import { Plus, Search, MapPin, MessageCircle, Eye, Banknote, Loader2, ShoppingCart, Package, Send, Smartphone } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { PageHeader } from "@/components/admin/ui-bits";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -77,6 +87,11 @@ export default function CommandesPage() {
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
 
+  // SMS modal state
+  const [smsModal, setSmsModal] = React.useState<{ order: Order } | null>(null);
+  const [smsMessage, setSmsMessage] = React.useState("");
+  const [sendingSms, setSendingSms] = React.useState(false);
+
   const loadOrders = React.useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -100,6 +115,23 @@ export default function CommandesPage() {
     loadOrders();
   }, [loadOrders]);
 
+  // Send automatic SMS notification on status change
+  const sendSmsNotification = async (orderId: string, event: string, userId?: string) => {
+    try {
+      await fetch("/api/sms/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event,
+          orderId,
+          userId: userId || user?.id,
+        }),
+      });
+    } catch (err) {
+      console.warn("[Commandes] SMS notify failed (non-blocking):", err);
+    }
+  };
+
   // Update order status
   const updateStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -112,8 +144,62 @@ export default function CommandesPage() {
 
       setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       toast({ title: "Statut mis à jour", description: `Commande → ${STATUS_LABELS[newStatus]}` });
+
+      // Send SMS notification on key status changes (fire-and-forget)
+      const smsEvent =
+        newStatus === "expedie" ? "order_shipped" :
+        newStatus === "livre" ? "order_delivered" :
+        newStatus === "annule" ? "order_cancelled" :
+        null;
+
+      if (smsEvent) {
+        sendSmsNotification(orderId, smsEvent);
+      }
     } catch (err) {
       toast({ title: "Erreur", description: "Mise à jour impossible", variant: "destructive" });
+    }
+  };
+
+  // Send custom SMS to customer
+  const handleSendSms = async () => {
+    if (!smsModal || !smsMessage.trim()) return;
+    setSendingSms(true);
+    try {
+      const res = await fetch("/api/sms/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: smsModal.order.customer_phone,
+          message: smsMessage,
+          orderId: smsModal.order.id,
+          trigger: "manual",
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({
+          title: "SMS envoyé ✓",
+          description: `Vers ${data.phone} · SID: ${data.sid?.slice(0, 12)}...`,
+        });
+        setSmsModal(null);
+        setSmsMessage("");
+      } else if (data.message?.includes("non configuré")) {
+        toast({
+          title: "Twilio non configuré",
+          description: "Configurez TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN et TWILIO_PHONE_NUMBER dans Vercel.",
+          variant: "destructive",
+        });
+      } else {
+        throw new Error(data.error || "Échec");
+      }
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Envoi impossible",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingSms(false);
     }
   };
 
@@ -295,6 +381,21 @@ export default function CommandesPage() {
                               </Button>
                             )}
                           </div>
+
+                          {/* SMS action */}
+                          {order.customer_phone && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-[11px] w-full mt-1 text-yaa-green-600 hover:bg-yaa-green-50 gap-1"
+                              onClick={() => {
+                                setSmsModal({ order });
+                                setSmsMessage(`Bonjour ${order.customer_name}, votre commande ${order.id.slice(0, 8).toUpperCase()} chez notre boutique est en cours de traitement. Merci !`);
+                              }}
+                            >
+                              <Smartphone className="w-3 h-3" /> Envoyer SMS
+                            </Button>
+                          )}
                         </Card>
                       </motion.div>
                     );
@@ -305,6 +406,70 @@ export default function CommandesPage() {
           })}
         </motion.div>
       )}
+
+      {/* SMS Modal */}
+      <Dialog open={!!smsModal} onOpenChange={(o) => !o && setSmsModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-yaa-green-600" /> Envoyer un SMS
+            </DialogTitle>
+            <DialogDescription>
+              À : {smsModal?.order.customer_name} ({smsModal?.order.customer_phone})
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs font-semibold">Message</Label>
+              <Textarea
+                placeholder="Tapez votre message..."
+                rows={4}
+                className="mt-1"
+                value={smsMessage}
+                onChange={(e) => setSmsMessage(e.target.value)}
+                maxLength={1600}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {smsMessage.length} / 1600 caractères · 1 SMS = 160 caractères
+              </p>
+            </div>
+
+            {/* Quick templates */}
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: "Préparation", msg: `Bonjour ${smsModal?.order.customer_name?.split(" ")[0] || ""}, votre commande est en préparation. Nous vous tiendrons informé(e) de l'expédition.` },
+                { label: "Expédition", msg: `Votre commande a été expédiée ! Vous la recevrez sous 24-48h.` },
+                { label: "Livraison", msg: `Votre commande est en cours de livraison. Le livreur vous appellera avant d'arriver.` },
+                { label: "Merci", msg: `Merci pour votre confiance ! À bientôt sur notre boutique 🙏` },
+              ].map((tpl) => (
+                <button
+                  key={tpl.label}
+                  type="button"
+                  onClick={() => setSmsMessage(tpl.msg)}
+                  className="text-[10px] font-semibold px-2 py-1 rounded-md bg-muted hover:bg-yaa-green-100 dark:hover:bg-yaa-green-950/50 text-muted-foreground hover:text-yaa-green-700"
+                >
+                  {tpl.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-3 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200 text-xs text-muted-foreground">
+              <Smartphone className="w-3.5 h-3.5 inline mr-1 text-yaa-green-600" />
+              Le SMS sera envoyé via Twilio. Si Twilio n&apos;est pas configuré, le message sera loggé uniquement.
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setSmsModal(null)}>Annuler</Button>
+            <Button
+              onClick={handleSendSms}
+              disabled={sendingSms || !smsMessage.trim()}
+              className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5"
+            >
+              {sendingSms ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi...</> : <><Send className="w-4 h-4" /> Envoyer</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

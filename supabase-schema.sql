@@ -386,3 +386,32 @@ create policy "Owners can manage reviews" on public.product_reviews
 
 create index if not exists idx_reviews_product_id on public.product_reviews(product_id);
 create index if not exists idx_reviews_status on public.product_reviews(status);
+
+-- ============================================================
+-- 21. SMS_LOGS (historique des SMS envoyés via Twilio)
+-- ============================================================
+create table if not exists public.sms_logs (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles on delete cascade not null,
+  phone text not null,
+  message text not null,
+  status text default 'pending' check (status in ('pending', 'sent', 'delivered', 'failed')),
+  twilio_sid text,
+  twilio_status text,
+  error_message text,
+  order_id uuid references public.orders on delete set null,
+  customer_id uuid references public.customers on delete set null,
+  trigger text,
+  created_at timestamp with time zone default now()
+);
+
+alter table public.sms_logs enable row level security;
+
+create policy "Users can view own sms logs" on public.sms_logs for select using (auth.uid() = user_id);
+create policy "Users can insert own sms logs" on public.sms_logs for insert with check (auth.uid() = user_id);
+create policy "Users can update own sms logs" on public.sms_logs for update using (auth.uid() = user_id);
+create policy "Users can delete own sms logs" on public.sms_logs for delete using (auth.uid() = user_id);
+
+create index if not exists idx_sms_logs_user_id on public.sms_logs(user_id);
+create index if not exists idx_sms_logs_created_at on public.sms_logs(created_at desc);
+create index if not exists idx_sms_logs_order_id on public.sms_logs(order_id);

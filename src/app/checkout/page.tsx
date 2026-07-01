@@ -117,6 +117,24 @@ export default function CheckoutPage() {
 
       if (error) throw error;
 
+      // Send automatic SMS notification to customer (order_created)
+      // This is fire-and-forget — we don't block the order flow on SMS
+      if (customer.phone) {
+        try {
+          await fetch("/api/sms/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              event: "order_created",
+              orderId: data.id,
+              userId: user?.id,
+            }),
+          });
+        } catch (smsErr) {
+          console.warn("[Checkout] SMS notification failed (non-blocking):", smsErr);
+        }
+      }
+
       // Clear cart
       clear();
 

@@ -17,6 +17,11 @@ import {
   Image as ImageIcon,
   Link2,
   Save,
+  MessageSquare,
+  Send,
+  Smartphone,
+  Clock,
+  XCircle,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,6 +83,78 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [changingPassword, setChangingPassword] = React.useState(false);
+
+  // SMS / Twilio
+  const [twilioSid, setTwilioSid] = React.useState("");
+  const [twilioToken, setTwilioToken] = React.useState("");
+  const [twilioFrom, setTwilioFrom] = React.useState("");
+  const [testingSms, setTestingSms] = React.useState(false);
+  const [smsLogs, setSmsLogs] = React.useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = React.useState(false);
+  const [testPhone, setTestPhone] = React.useState("");
+  const [sendingTest, setSendingTest] = React.useState(false);
+
+  // Load SMS logs on mount
+  React.useEffect(() => {
+    loadSmsLogs();
+  }, []);
+
+  async function loadSmsLogs() {
+    setLoadingLogs(true);
+    try {
+      const res = await fetch("/api/sms/logs?limit=20");
+      const data = await res.json();
+      if (!data.error) setSmsLogs(data.logs || []);
+    } catch (err) {
+      console.error("[Settings] SMS logs error:", err);
+    } finally {
+      setLoadingLogs(false);
+    }
+  }
+
+  async function handleTestSms() {
+    if (!testPhone) {
+      toast({ title: "Numéro manquant", description: "Entrez un numéro de téléphone", variant: "destructive" });
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const res = await fetch("/api/sms/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: testPhone,
+          message: "🧪 Test SMS depuis YAA Commerce — votre configuration Twilio fonctionne !",
+          trigger: "test",
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({
+          title: "SMS envoyé ✓",
+          description: `Vers ${data.phone} · SID: ${data.sid?.slice(0, 12)}...`,
+        });
+        setTestPhone("");
+        loadSmsLogs();
+      } else if (data.message?.includes("non configuré")) {
+        toast({
+          title: "Twilio non configuré",
+          description: "Ajoutez TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN et TWILIO_PHONE_NUMBER dans les variables d'environnement Vercel.",
+          variant: "destructive",
+        });
+      } else {
+        throw new Error(data.error || "Échec");
+      }
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Envoi impossible",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingTest(false);
+    }
+  }
 
   const handleTestCloudinary = async () => {
     if (!cloudName || !apiKey || !apiSecret) {
@@ -162,6 +239,9 @@ export default function SettingsPage() {
             </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-1.5">
               <Bell className="w-3.5 h-3.5" /> Notifications
+            </TabsTrigger>
+            <TabsTrigger value="sms" className="gap-1.5">
+              <Smartphone className="w-3.5 h-3.5" /> SMS / Twilio
             </TabsTrigger>
             <TabsTrigger value="security" className="gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5" /> Sécurité
@@ -439,6 +519,177 @@ export default function SettingsPage() {
                   <Save className="w-4 h-4" /> Sauvegarder
                 </Button>
               </div>
+            </Card>
+          </TabsContent>
+
+          {/* === SMS / TWILIO TAB === */}
+          <TabsContent value="sms" className="mt-0 space-y-4">
+            <Card className="p-5 lg:p-6">
+              <div className="flex items-start justify-between mb-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center">
+                    <Smartphone className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="font-display font-semibold">SMS Automatiques (Twilio)</h2>
+                    <p className="text-xs text-muted-foreground">Notifiez vos clients par SMS à chaque étape de commande</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Config instructions */}
+              <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 flex items-start gap-3 mb-4">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-muted-foreground">
+                  <p className="font-semibold text-amber-700 mb-1">Configuration requise (variables d'environnement Vercel)</p>
+                  <p>Pour activer l&apos;envoi de SMS, ajoutez ces 3 variables dans Vercel → Settings → Environment Variables :</p>
+                  <ul className="mt-1 space-y-0.5 font-mono">
+                    <li>• <code className="bg-amber-100 dark:bg-amber-950/50 px-1 rounded">TWILIO_ACCOUNT_SID</code> — votre Account SID</li>
+                    <li>• <code className="bg-amber-100 dark:bg-amber-950/50 px-1 rounded">TWILIO_AUTH_TOKEN</code> — votre Auth Token</li>
+                    <li>• <code className="bg-amber-100 dark:bg-amber-950/50 px-1 rounded">TWILIO_PHONE_NUMBER</code> — numéro Twilio (ex: +1234567890)</li>
+                  </ul>
+                  <p className="mt-2">
+                    Créez un compte sur{" "}
+                    <a href="https://www.twilio.com/console" target="_blank" rel="noopener noreferrer" className="text-amber-700 underline">
+                      twilio.com/console
+                    </a>{" "}
+                    — essai gratuit avec 15$ de crédit.
+                  </p>
+                </div>
+              </div>
+
+              {/* Form (informational only — credentials are stored in env vars, not Supabase for security) */}
+              <div className="grid sm:grid-cols-3 gap-3 mb-4">
+                <div>
+                  <Label htmlFor="twilio-sid" className="text-xs font-semibold">Account SID</Label>
+                  <Input
+                    id="twilio-sid"
+                    placeholder="ACxxxxxxxxxxxxxxxxxxxxx"
+                    value={twilioSid}
+                    onChange={(e) => setTwilioSid(e.target.value)}
+                    className="mt-1 font-mono"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="twilio-token" className="text-xs font-semibold">Auth Token</Label>
+                  <Input
+                    id="twilio-token"
+                    type="password"
+                    placeholder="••••••••••••••••"
+                    value={twilioToken}
+                    onChange={(e) => setTwilioToken(e.target.value)}
+                    className="mt-1 font-mono"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="twilio-from" className="text-xs font-semibold">Numéro Twilio</Label>
+                  <Input
+                    id="twilio-from"
+                    placeholder="+1234567890"
+                    value={twilioFrom}
+                    onChange={(e) => setTwilioFrom(e.target.value)}
+                    className="mt-1 font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Test SMS */}
+              <div className="p-4 rounded-lg border border-slate-200 mb-4">
+                <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Send className="w-4 h-4 text-yaa-green-600" /> Tester l&apos;envoi de SMS
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="+225 07 12 34 56"
+                    value={testPhone}
+                    onChange={(e) => setTestPhone(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleTestSms}
+                    disabled={sendingTest || !testPhone}
+                    className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5"
+                  >
+                    {sendingTest ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi...</> : <><Send className="w-4 h-4" /> Envoyer test</>}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  Le SMS sera envoyé uniquement si Twilio est configuré dans les variables d&apos;environnement.
+                </p>
+              </div>
+
+              {/* Auto SMS info */}
+              <div className="p-3 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200">
+                <p className="text-xs text-muted-foreground mb-2">
+                  <span className="font-semibold text-yaa-green-700">SMS automatiques activés :</span>
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 text-yaa-green-500" /> Nouvelle commande reçue
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 text-yaa-green-500" /> Commande expédiée (+ suivi)
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 text-yaa-green-500" /> Commande livrée
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 text-yaa-green-500" /> Commande annulée
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* SMS History */}
+            <Card className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-display font-semibold text-sm">Historique des SMS</h3>
+                  <p className="text-xs text-muted-foreground">20 derniers SMS envoyés</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={loadSmsLogs} disabled={loadingLogs}>
+                  {loadingLogs ? <Loader2 className="w-3 h-3 animate-spin" /> : <Bell className="w-3 h-3" />}
+                </Button>
+              </div>
+
+              {smsLogs.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-10 h-10 mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="text-xs text-muted-foreground">Aucun SMS envoyé pour le moment</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {smsLogs.map((log) => {
+                    const statusIcon = log.status === "sent" || log.status === "delivered"
+                      ? <CheckCircle2 className="w-3 h-3 text-yaa-green-500" />
+                      : log.status === "pending"
+                      ? <Clock className="w-3 h-3 text-amber-500" />
+                      : <XCircle className="w-3 h-3 text-rose-500" />;
+                    return (
+                      <div key={log.id} className="p-3 rounded-lg border border-slate-200 hover:bg-muted/30">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {statusIcon}
+                            <span className="text-xs font-mono text-muted-foreground truncate">{log.phone}</span>
+                            {log.trigger && (
+                              <span className="text-[9px] font-bold bg-yaa-green-100 text-yaa-green-700 dark:bg-yaa-green-950/50 dark:text-yaa-green-400 px-1.5 py-0.5 rounded">
+                                {log.trigger}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                            {new Date(log.created_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-foreground line-clamp-2">{log.message}</p>
+                        {log.error_message && (
+                          <p className="text-[10px] text-rose-600 mt-1">⚠️ {log.error_message}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </Card>
           </TabsContent>
 
