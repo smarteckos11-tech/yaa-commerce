@@ -30,6 +30,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Produits", href: "/admin/produits", icon: "Package" },
       { label: "Avis clients", href: "/admin/reviews", icon: "Star" },
       { label: "Commandes", href: "/admin/commandes", icon: "ShoppingCart" },
+      { label: "Retours & Remb.", href: "/admin/retours", icon: "RotateCcw" },
       { label: "Clients", href: "/admin/clients", icon: "Users" },
       { label: "Paiements", href: "/admin/paiements", icon: "CreditCard" },
       { label: "WhatsApp Commerce", href: "/admin/whatsapp", icon: "MessageCircle", badge: { text: "Nouveau", variant: "orange" } },

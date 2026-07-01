@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { CheckCircle2, Package, Truck, MessageCircle, ArrowRight, Home } from "lucide-react";
+import { CheckCircle2, Package, Truck, MessageCircle, ArrowRight, Home, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { YaaLogo } from "@/components/landing/YaaLogo";
@@ -82,6 +82,21 @@ function SuccessContent() {
                 <Link href="/">Continuer mes achats <ArrowRight className="w-4 h-4" /></Link>
               </Button>
             </div>
+
+            {/* Return link */}
+            {orderId && (
+              <div className="mt-4 pt-4 border-t text-center">
+                <p className="text-[11px] text-muted-foreground mb-2">
+                  Un problème avec votre commande ?
+                </p>
+                <Link
+                  href={`/retours/demande?order=${orderId}`}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-yaa-orange-600 hover:text-yaa-orange-700 hover:underline"
+                >
+                  <RotateCcw className="w-3 h-3" /> Demander un retour ou remboursement
+                </Link>
+              </div>
+            )}
           </Card>
         </motion.div>
       </main>

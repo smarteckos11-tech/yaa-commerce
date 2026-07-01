@@ -415,3 +415,39 @@ create policy "Users can delete own sms logs" on public.sms_logs for delete usin
 create index if not exists idx_sms_logs_user_id on public.sms_logs(user_id);
 create index if not exists idx_sms_logs_created_at on public.sms_logs(created_at desc);
 create index if not exists idx_sms_logs_order_id on public.sms_logs(order_id);
+
+-- ============================================================
+-- 22. RETURNS (retours et remboursements)
+-- ============================================================
+create table if not exists public.returns (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles on delete cascade not null,
+  order_id uuid references public.orders on delete cascade not null,
+  customer_name text not null,
+  customer_phone text,
+  customer_email text,
+  reason text check (reason in ('defect', 'wrong_item', 'not_as_described', 'damaged_shipping', 'changed_mind', 'late_delivery', 'other')),
+  reason_details text,
+  requested_refund_amount integer default 0,
+  approved_refund_amount integer,
+  refund_method text check (refund_method in ('original', 'wave', 'orange_money', 'mtn_momo', 'moov', 'cash', 'store_credit')),
+  refund_reference text,
+  status text default 'requested' check (status in ('requested', 'under_review', 'approved', 'rejected', 'refunded', 'received_back')),
+  items_count integer default 1,
+  admin_notes text,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  resolved_at timestamp with time zone
+);
+
+alter table public.returns enable row level security;
+
+create policy "Users can view own returns" on public.returns for select using (auth.uid() = user_id);
+create policy "Users can insert own returns" on public.returns for insert with check (auth.uid() = user_id);
+create policy "Users can update own returns" on public.returns for update using (auth.uid() = user_id);
+create policy "Users can delete own returns" on public.returns for delete using (auth.uid() = user_id);
+
+create index if not exists idx_returns_user_id on public.returns(user_id);
+create index if not exists idx_returns_order_id on public.returns(order_id);
+create index if not exists idx_returns_status on public.returns(status);
+create index if not exists idx_returns_created_at on public.returns(created_at desc);
