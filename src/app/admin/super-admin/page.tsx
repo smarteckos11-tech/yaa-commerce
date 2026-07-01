@@ -388,6 +388,31 @@ export default function SuperAdminPage() {
     loadData();
   }, [user, isSuperAdmin, authLoading, loadData]);
 
+  // ---- Derived data (must be computed before any conditional return) ----
+  const planTotals = React.useMemo(() => {
+    const dist = stats?.planDistribution ?? {};
+    const total = (["decouverte", "business", "pro"] as PlanKey[]).reduce(
+      (acc, k) => acc + (dist[k]?.count ?? 0),
+      0,
+    );
+    return { dist, total: total || stats?.totalUsers || 0 };
+  }, [stats]);
+
+  const filteredUsers = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      if (planFilter !== "tous" && u.plan !== planFilter) return false;
+      if (!q) return true;
+      return (
+        u.email.toLowerCase().includes(q) ||
+        (u.full_name?.toLowerCase().includes(q) ?? false) ||
+        (u.boutique_name?.toLowerCase().includes(q) ?? false)
+      );
+    });
+  }, [users, search, planFilter]);
+
+  const refresh = () => loadData({ silent: true });
+
   // ---- Early gates ----
   if (authLoading) {
     return (
@@ -435,31 +460,6 @@ export default function SuperAdminPage() {
       </div>
     );
   }
-
-  // ---- Derived data ----
-  const planTotals = React.useMemo(() => {
-    const dist = stats?.planDistribution ?? {};
-    const total = (["decouverte", "business", "pro"] as PlanKey[]).reduce(
-      (acc, k) => acc + (dist[k]?.count ?? 0),
-      0,
-    );
-    return { dist, total: total || stats?.totalUsers || 0 };
-  }, [stats]);
-
-  const filteredUsers = React.useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return users.filter((u) => {
-      if (planFilter !== "tous" && u.plan !== planFilter) return false;
-      if (!q) return true;
-      return (
-        u.email.toLowerCase().includes(q) ||
-        (u.full_name?.toLowerCase().includes(q) ?? false) ||
-        (u.boutique_name?.toLowerCase().includes(q) ?? false)
-      );
-    });
-  }, [users, search, planFilter]);
-
-  const refresh = () => loadData({ silent: true });
 
   return (
     <motion.div variants={container} initial="hidden" animate="show">
