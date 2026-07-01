@@ -9,6 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DynamicIcon } from "./dynamic-icon";
 import { NAV_GROUPS } from "@/lib/admin-data";
+import { useAuth } from "@/hooks/use-auth";
+
+const PLAN_LABELS: Record<string, string> = {
+  decouverte: "Découverte",
+  business: "Business",
+  pro: "Pro",
+};
+
+const PLAN_COLORS: Record<string, string> = {
+  decouverte: "text-muted-foreground",
+  business: "text-yaa-orange-600",
+  pro: "text-yaa-green-600",
+};
 
 export function AdminSidebar({
   collapsed,
@@ -18,6 +31,12 @@ export function AdminSidebar({
   onToggle: () => void;
 }) {
   const pathname = usePathname();
+  const { user, profile } = useAuth();
+
+  const displayName = profile?.full_name || profile?.boutique_name || user?.email?.split("@")[0] || "Marchand";
+  const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const planLabel = PLAN_LABELS[profile?.plan || "decouverte"] || "Découverte";
+  const planColor = PLAN_COLORS[profile?.plan || "decouverte"] || "text-muted-foreground";
 
   return (
     <aside
@@ -111,28 +130,30 @@ export function AdminSidebar({
 
       {/* Footer */}
       <div className="border-t border-sidebar-border p-2">
-        <div
+        <Link
+          href="/admin/settings"
           className={cn(
             "flex items-center gap-2.5 p-2 rounded-md hover:bg-sidebar-accent transition-colors cursor-pointer",
             collapsed && "justify-center"
           )}
+          title={collapsed ? displayName : undefined}
         >
           <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarFallback className="bg-yaa-orange-500 text-white text-xs font-bold">
-              MD
+              {initials}
             </AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold truncate text-sidebar-foreground">
-                Moussa Diallo
+                {displayName}
               </p>
-              <p className="text-[10px] text-muted-foreground truncate">
-                Business Plan
+              <p className={cn("text-[10px] truncate font-medium", planColor)}>
+                Plan {planLabel}
               </p>
             </div>
           )}
-        </div>
+        </Link>
       </div>
 
       {/* Collapse toggle */}
