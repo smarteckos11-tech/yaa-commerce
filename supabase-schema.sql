@@ -487,3 +487,66 @@ exception when duplicate_object then null; end $$;
 
 create index if not exists idx_marketplace_extensions_user_id on public.marketplace_extensions(user_id);
 create index if not exists idx_marketplace_extensions_extension_name on public.marketplace_extensions(extension_name);
+
+-- ============================================================
+-- 24. MARKETPLACE_APPS (catalogue public d'apps — comme Shopify App Store)
+-- ============================================================
+create table if not exists public.marketplace_apps (
+  id uuid default gen_random_uuid() primary key,
+  slug text unique not null,
+  name text not null,
+  short_description text,
+  description text,
+  category text check (category in ('Paiement', 'Logistique', 'Marketing', 'Analytics', 'Communication', 'Médias', 'CRM', 'Comptabilité', 'Autre')),
+  developer_name text not null,
+  developer_email text not null,
+  developer_website text,
+  icon_url text,
+  screenshots jsonb default '[]'::jsonb,
+  pricing_model text default 'free' check (pricing_model in ('free', 'freemium', 'paid')),
+  price_monthly integer default 0,
+  setup_fee integer default 0,
+  webhook_url text,
+  oauth_callback_url text,
+  permissions jsonb default '[]'::jsonb,
+  features jsonb default '[]'::jsonb,
+  status text default 'pending_review' check (status in ('pending_review', 'approved', 'rejected', 'suspended')),
+  install_count integer default 0,
+  rating numeric default 0,
+  review_count integer default 0,
+  admin_notes text,
+  submitted_by uuid references public.profiles on delete set null,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+alter table public.marketplace_apps enable row level security;
+
+-- Anyone can read APPROVED apps (public catalog)
+do $$ begin
+  create policy "Anyone can read approved apps" on public.marketplace_apps
+    for select using (status = 'approved');
+exception when duplicate_object then null; end $$;
+
+-- Authenticated users can read their own submitted apps (any status)
+do $$ begin
+  create policy "Developers can read own apps" on public.marketplace_apps
+    for select using (submitted_by = auth.uid());
+exception when duplicate_object then null; end $$;
+
+-- Anyone authenticated can submit an app
+do $$ begin
+  create policy "Authenticated can submit apps" on public.marketplace_apps
+    for insert with check (auth.uid() is not null);
+exception when duplicate_object then null; end $$;
+
+-- Developers can update their own apps
+do $$ begin
+  create policy "Developers can update own apps" on public.marketplace_apps
+    for update using (submitted_by = auth.uid());
+exception when duplicate_object then null; end $$;
+
+-- Super admin can update any app (approve/reject) — handled via service_role in API
+create index if not exists idx_marketplace_apps_status on public.marketplace_apps(status);
+create index if not exists idx_marketplace_apps_category on public.marketplace_apps(category);
+create index if not exists idx_marketplace_apps_slug on public.marketplace_apps(slug);

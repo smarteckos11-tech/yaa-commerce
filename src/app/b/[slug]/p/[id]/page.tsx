@@ -26,10 +26,12 @@ import {
   ChevronDown,
   Eye,
   ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase-client";
 import { useCart } from "@/lib/cart-store";
 import { ProductReviews } from "@/components/storefront/product-reviews";
@@ -53,6 +55,26 @@ type RelatedProduct = {
   price: number;
   image_url: string | null;
   category: string | null;
+};
+
+type Bundle = {
+  id: string;
+  name: string;
+  description: string | null;
+  bundle_price: number;
+  original_price: number;
+  products: { id?: string; name: string; price: number; emoji?: string }[];
+  sold_count: number;
+};
+
+type PromoCode = {
+  id: string;
+  code: string;
+  type: "percentage" | "fixed";
+  value: number;
+  min_order: number;
+  end_date: string | null;
+  description: string | null;
 };
 
 type Review = {
@@ -89,6 +111,11 @@ export default function ProductPage() {
 
   const [product, setProduct] = React.useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = React.useState<RelatedProduct[]>([]);
+  const [bundles, setBundles] = React.useState<Bundle[]>([]);
+  const [promoCodes, setPromoCodes] = React.useState<PromoCode[]>([]);
+  const [appliedPromo, setAppliedPromo] = React.useState<string | null>(null);
+  const [promoInput, setPromoInput] = React.useState("");
+  const [promoError, setPromoError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [quantity, setQuantity] = React.useState(1);
   const [selectedImage, setSelectedImage] = React.useState(0);
@@ -128,6 +155,40 @@ export default function ProductPage() {
           .limit(4);
 
         setRelatedProducts((related || []) as RelatedProduct[]);
+
+        // Load bundles that include this product
+        const { data: allBundles } = await supabase
+          .from("bundles")
+          .select("*")
+          .eq("user_id", prod.user_id)
+          .eq("status", "active");
+
+        if (allBundles) {
+          // Filter bundles containing this product
+          const matching = (allBundles as Bundle[]).filter((b) => {
+            const prods = Array.isArray(b.products) ? b.products : [];
+            return prods.some((p: any) => p.id === productId);
+          });
+          setBundles(matching);
+        }
+
+        // Load active promo codes for this boutique
+        const { data: promos } = await supabase
+          .from("promo_codes")
+          .select("id, code, type, value, min_order, end_date, description")
+          .eq("user_id", prod.user_id)
+          .eq("status", "active");
+
+        if (promos) {
+          // Filter: not expired + min_order <= product price
+          const now = new Date();
+          const valid = (promos as PromoCode[]).filter((p) => {
+            const notExpired = !p.end_date || new Date(p.end_date) > now;
+            const minOk = !p.min_order || p.min_order <= (prod.price * 1);
+            return notExpired && minOk;
+          });
+          setPromoCodes(valid);
+        }
       } finally {
         setLoading(false);
       }
@@ -176,6 +237,35 @@ export default function ProductPage() {
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 2000);
   };
+
+  // Add a bundle to cart (each product in the bundle)
+  const handleAddBundle = (bundle: Bundle) => {
+    bundle.products.forEach((p) => {
+      add({
+        productId: p.id || `bundle-${bundle.id}-${p.name}`,
+        name: p.name,
+        price: p.price, // original price; discount applied via promo
+        image: null,
+        slug,
+      }, 1);
+    });
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 2000);
+  };
+
+  // Apply a promo code on the product page
+  const applyPromoCode = (code: string) => {
+    const promo = promoCodes.find((p) => p.code.toLowerCase() === code.toLowerCase());
+    if (!promo) {
+      setPromoError("Code promo invalide ou expiré");
+      setAppliedPromo(null);
+      return;
+    }
+    setPromoError(null);
+    setAppliedPromo(promo.code);
+  };
+
+  const applyPromo = useCart((s) => s.applyPromo);
 
   if (loading) {
     return (
@@ -397,6 +487,160 @@ export default function ProductPage() {
             </div>
           </motion.div>
         </div>
+
+        {/* === BUNDLES SECTION === */}
+        {bundles.length > 0 && (
+          <section className="mb-12">
+            <h2 className="font-display font-bold text-xl mb-1">🎉 Offres groupées</h2>
+            <p className="text-sm text-muted-foreground mb-4">Économisez en achetant ce produit en bundle</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
+              {bundles.map((bundle) => {
+                const savings = bundle.original_price - bundle.bundle_price;
+                const discountPercent = bundle.original_price > 0 ? Math.round((savings / bundle.original_price) * 100) : 0;
+                return (
+                  <Card key={bundle.id} className="p-5 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-display font-bold text-base">{bundle.name}</h3>
+                        {bundle.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{bundle.description}</p>
+                        )}
+                      </div>
+                      <Badge className="bg-yaa-orange-100 text-yaa-orange-700">-{discountPercent}%</Badge>
+                    </div>
+
+                    <div className="space-y-1.5 mb-3">
+                      {bundle.products.map((p, i) => (
+                        <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                          <span className="text-lg">{p.emoji || "📦"}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{p.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{p.price.toLocaleString("fr-FR")} FCFA</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <span className="text-2xl font-display font-extrabold text-yaa-green-600">
+                        {bundle.bundle_price.toLocaleString("fr-FR")} FCFA
+                      </span>
+                      <span className="text-sm line-through text-muted-foreground">
+                        {bundle.original_price.toLocaleString("fr-FR")} FCFA
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-yaa-orange-600">
+                        <Sparkles className="w-3 h-3" />
+                        Économie : {savings.toLocaleString("fr-FR")} FCFA
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{bundle.sold_count || 0} vendus</span>
+                    </div>
+
+                    <Button
+                      className="w-full mt-3 bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5"
+                      onClick={() => handleAddBundle(bundle)}
+                    >
+                      <ShoppingCart className="w-4 h-4" /> Ajouter le bundle au panier
+                    </Button>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* === PROMO CODES SECTION === */}
+        {promoCodes.length > 0 && (
+          <section className="mb-12">
+            <h2 className="font-display font-bold text-xl mb-1">🎟️ Codes promo disponibles</h2>
+            <p className="text-sm text-muted-foreground mb-4">Appliquez un code pour réduire votre prix</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl">
+              {promoCodes.map((promo) => {
+                const isApplied = appliedPromo === promo.code;
+                return (
+                  <Card key={promo.id} className={cn("p-4 transition-all", isApplied ? "ring-2 ring-yaa-green-500 bg-yaa-green-50/50" : "")}>
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <code className="font-mono font-bold text-base bg-yaa-green-100 text-yaa-green-700 px-2 py-1 rounded">
+                          {promo.code}
+                        </code>
+                        {promo.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{promo.description}</p>
+                        )}
+                      </div>
+                      <Badge className="bg-yaa-orange-100 text-yaa-orange-700">
+                        {promo.type === "percentage" ? `-${promo.value}%` : `-${promo.value.toLocaleString("fr-FR")} FCFA`}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-3">
+                      {promo.min_order > 0 && (
+                        <span>Min. {promo.min_order.toLocaleString("fr-FR")} FCFA</span>
+                      )}
+                      {promo.end_date && (
+                        <span>· Expire le {new Date(promo.end_date).toLocaleDateString("fr-FR")}</span>
+                      )}
+                    </div>
+                    {isApplied ? (
+                      <Button className="w-full bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5" disabled>
+                        <Check className="w-4 h-4" /> Code appliqué
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="w-full gap-1.5"
+                        onClick={() => applyPromoCode(promo.code)}
+                      >
+                        Appliquer ce code
+                      </Button>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Manual promo input */}
+            <Card className="p-4 mt-3 max-w-3xl">
+              <p className="text-xs font-semibold mb-2">Vous avez un autre code ?</p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Entrez votre code..."
+                  value={promoInput}
+                  onChange={(e) => {
+                    setPromoInput(e.target.value.toUpperCase());
+                    setPromoError(null);
+                  }}
+                  className="flex-1 font-mono"
+                />
+                <Button
+                  className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5"
+                  onClick={() => {
+                    applyPromoCode(promoInput);
+                    if (promoCodes.find((p) => p.code.toLowerCase() === promoInput.toLowerCase())) {
+                      const promo = promoCodes.find((p) => p.code.toLowerCase() === promoInput.toLowerCase())!;
+                      if (promo.type === "percentage") {
+                        applyPromo(promo.code, promo.value);
+                      }
+                      setPromoInput("");
+                    }
+                  }}
+                  disabled={!promoInput.trim()}
+                >
+                  Appliquer
+                </Button>
+              </div>
+              {promoError && (
+                <p className="text-xs text-rose-600 mt-2">{promoError}</p>
+              )}
+              {appliedPromo && (
+                <p className="text-xs text-yaa-green-600 mt-2 flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Code "{appliedPromo}" appliqué — la réduction sera calculée au panier
+                </p>
+              )}
+            </Card>
+          </section>
+        )}
 
         {/* === FAQ SECTION === */}
         <section className="mb-12">
