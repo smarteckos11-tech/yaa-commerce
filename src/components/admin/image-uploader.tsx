@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { X, Loader2, ImagePlus, AlertCircle } from "lucide-react";
+import { X, Loader2, ImagePlus, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type UploadResult = {
@@ -11,8 +11,23 @@ type UploadResult = {
   height: number;
 };
 
+type CloudinaryConfig = {
+  cloudName: string | null;
+  uploadPreset: string | null;
+  signedConfigured: boolean;
+  unsignedConfigured: boolean;
+  configured: boolean;
+  method: "signed" | "unsigned" | null;
+};
+
 /**
  * Composant d'upload d'images vers Cloudinary.
+ *
+ * Supporte 2 méthodes :
+ * 1. Signed upload (sécurisé) — nécessite CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET côté serveur
+ * 2. Unsigned upload (simple) — nécessite NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+ *
+ * Le composant détecte automatiquement la méthode disponible via /api/cloudinary/config
  */
 export function ImageUploader({
   images,
@@ -29,15 +44,104 @@ export function ImageUploader({
 }) {
   const [uploading, setUploading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [config, setConfig] = React.useState<CloudinaryConfig | null>(null);
+  const [loadingConfig, setLoadingConfig] = React.useState(true);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const isConfigured = !!cloudName;
+  // Load Cloudinary config on mount
+  React.useEffect(() => {
+    let mounted = true;
+    fetch("/api/cloudinary/config")
+      .then((r) => r.json())
+      .then((data) => {
+        if (mounted) {
+          setConfig(data);
+          setLoadingConfig(false);
+        }
+      })
+      .catch(() => {
+        if (mounted) setLoadingConfig(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const isConfigured = config?.configured ?? false;
+  const cloudName = config?.cloudName;
+
+  // Upload via signed method (server-side signature)
+  const uploadSigned = async (file: File, folder: string): Promise<UploadResult> => {
+    const sigRes = await fetch("/api/cloudinary/sign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ folder }),
+    });
+    const sigData = await sigRes.json();
+
+    if (sigData.error || !sigData.configured) {
+      throw new Error(sigData.error || "Signature non disponible");
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("api_key", sigData.apiKey);
+    formData.append("signature", sigData.signature);
+    formData.append("timestamp", String(sigData.timestamp));
+    formData.append("folder", sigData.folder);
+
+    const uploadRes = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: "POST", body: formData }
+    );
+    const uploadData = await uploadRes.json();
+
+    if (uploadData.error) {
+      throw new Error(uploadData.error.message);
+    }
+
+    return {
+      secure_url: uploadData.secure_url,
+      public_id: uploadData.public_id,
+      width: uploadData.width,
+      height: uploadData.height,
+    };
+  };
+
+  // Upload via unsigned method (upload_preset)
+  const uploadUnsigned = async (file: File): Promise<UploadResult> => {
+    if (!config?.uploadPreset) {
+      throw new Error("Upload preset non configuré");
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", config.uploadPreset);
+
+    const uploadRes = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: "POST", body: formData }
+    );
+    const uploadData = await uploadRes.json();
+
+    if (uploadData.error) {
+      throw new Error(uploadData.error.message);
+    }
+
+    return {
+      secure_url: uploadData.secure_url,
+      public_id: uploadData.public_id,
+      width: uploadData.width,
+      height: uploadData.height,
+    };
+  };
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    if (!isConfigured) {
-      setError("Cloudinary n'est pas configuré. Ajoutez NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME dans .env.local");
+    if (!isConfigured || !cloudName) {
+      setError(
+        "Cloudinary n'est pas configuré. Allez dans Paramètres → Cloudinary pour le configurer."
+      );
       return;
     }
 
@@ -59,42 +163,19 @@ export function ImageUploader({
           continue;
         }
 
-        const sigRes = await fetch("/api/cloudinary/sign", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ folder: "yaa-products" }),
-        });
-        const sigData = await sigRes.json();
-
-        if (sigData.error) {
-          setError(sigData.error);
-          continue;
+        try {
+          const result =
+            config?.method === "signed"
+              ? await uploadSigned(file, "yaa-products")
+              : await uploadUnsigned(file);
+          newImages.push(result);
+        } catch (uploadErr) {
+          setError(
+            uploadErr instanceof Error
+              ? uploadErr.message
+              : `Erreur upload ${file.name}`
+          );
         }
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("api_key", sigData.apiKey);
-        formData.append("signature", sigData.signature);
-        formData.append("timestamp", sigData.timestamp);
-        formData.append("folder", sigData.folder);
-
-        const uploadRes = await fetch(
-          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-          { method: "POST", body: formData }
-        );
-        const uploadData = await uploadRes.json();
-
-        if (uploadData.error) {
-          setError(uploadData.error.message);
-          continue;
-        }
-
-        newImages.push({
-          secure_url: uploadData.secure_url,
-          public_id: uploadData.public_id,
-          width: uploadData.width,
-          height: uploadData.height,
-        });
       }
 
       if (multiple) {
@@ -116,6 +197,20 @@ export function ImageUploader({
     onChange(next);
   };
 
+  // Loading config state
+  if (loadingConfig) {
+    return (
+      <div>
+        <label className="text-xs font-semibold mb-1.5 block">{label}</label>
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          <div className="aspect-square rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center">
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <label className="text-xs font-semibold mb-1.5 block">{label}</label>
@@ -123,13 +218,29 @@ export function ImageUploader({
       {!isConfigured && (
         <div className="mb-2 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 flex items-start gap-2 text-amber-700 dark:text-amber-400">
           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-          <p className="text-[11px]">
-            Cloudinary non configuré. Créez un compte sur{" "}
-            <a href="https://cloudinary.com" target="_blank" rel="noopener noreferrer" className="underline font-semibold">
-              cloudinary.com
-            </a>{" "}
-            (gratuit) puis ajoutez <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</code> dans .env.local
-          </p>
+          <div className="text-[11px]">
+            <p className="font-semibold mb-1">Cloudinary non configuré</p>
+            <p>
+              Créez un compte gratuit sur{" "}
+              <a
+                href="https://cloudinary.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold"
+              >
+                cloudinary.com
+              </a>{" "}
+              puis configurez-le dans{" "}
+              <strong>Paramètres → Cloudinary</strong>.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isConfigured && (
+        <div className="mb-2 p-2 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200 flex items-center gap-2 text-[10px] text-yaa-green-700 dark:text-yaa-green-400">
+          <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
+          Cloudinary connecté · Méthode : {config?.method === "signed" ? "Signée (sécurisée)" : "Unsigned (preset)"}
         </div>
       )}
 
@@ -139,6 +250,7 @@ export function ImageUploader({
             key={img.public_id}
             className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 group"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={img.secure_url}
               alt={`Image ${i + 1}`}

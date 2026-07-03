@@ -24,6 +24,7 @@ import {
   XCircle,
   Trash2,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,11 +63,26 @@ export default function SettingsPage() {
   const { profile } = useAuth();
   const [testing, setTesting] = React.useState(false);
   const [cloudStatus, setCloudStatus] = React.useState<"unknown" | "connected" | "error">("unknown");
+  const [cloudConfig, setCloudConfig] = React.useState<any>(null);
 
-  // Cloudinary form
+  // Cloudinary form (for display only — real credentials go in env vars)
   const [cloudName, setCloudName] = React.useState("");
   const [apiKey, setApiKey] = React.useState("");
   const [apiSecret, setApiSecret] = React.useState("");
+  const [uploadPreset, setUploadPreset] = React.useState("");
+
+  // Check real Cloudinary config on mount
+  React.useEffect(() => {
+    fetch("/api/cloudinary/config")
+      .then((r) => r.json())
+      .then((data) => {
+        setCloudConfig(data);
+        setCloudStatus(data.configured ? "connected" : "unknown");
+        if (data.cloudName) setCloudName(data.cloudName);
+        if (data.uploadPreset) setUploadPreset(data.uploadPreset);
+      })
+      .catch(() => setCloudStatus("unknown"));
+  }, []);
 
   // General settings
   const [siteName, setSiteName] = React.useState(profile?.boutique_name || "");
@@ -206,30 +222,92 @@ export default function SettingsPage() {
   }, []);
 
   const handleTestCloudinary = async () => {
-    if (!cloudName || !apiKey || !apiSecret) {
-      toast({ title: "Champs manquants", description: "Remplissez cloud name, API key et secret", variant: "destructive" });
-      return;
-    }
     setTesting(true);
     try {
-      // Test: call our sign endpoint with these credentials
-      // In production, this would save to Supabase settings table
-      const res = await fetch("/api/cloudinary/sign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folder: "yaa-test" }),
-      });
-      const data = await res.json();
-      if (data.signature) {
-        setCloudStatus("connected");
-        toast({ title: "✅ Cloudinary connecté !", description: "Upload d'images prêt à l'emploi." });
-      } else {
+      // Re-fetch config to check current state
+      const configRes = await fetch("/api/cloudinary/config");
+      const configData = await configRes.json();
+
+      if (!configData.configured) {
         setCloudStatus("error");
-        toast({ title: "❌ Erreur", description: data.error || "Connexion échouée", variant: "destructive" });
+        setCloudConfig(configData);
+        toast({
+          title: "Cloudinary non configuré",
+          description: "Ajoutez les variables d'environnement ci-dessous dans Vercel ou .env.local",
+          variant: "destructive",
+        });
+        return;
       }
-    } catch {
+
+      // Test actual upload (1x1 pixel PNG)
+      if (configData.method === "signed") {
+        // Test signed upload
+        const sigRes = await fetch("/api/cloudinary/sign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ folder: "yaa-test" }),
+        });
+        const sigData = await sigRes.json();
+
+        if (sigData.error || !sigData.signature) {
+          throw new Error(sigData.error || "Signature échouée");
+        }
+
+        // Create a tiny test image (1x1 transparent PNG)
+        const testBlob = new Blob([
+          new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]),
+        ], { type: "image/png" });
+
+        const formData = new FormData();
+        formData.append("file", testBlob, "test.png");
+        formData.append("api_key", sigData.apiKey);
+        formData.append("signature", sigData.signature);
+        formData.append("timestamp", String(sigData.timestamp));
+        formData.append("folder", sigData.folder);
+
+        const uploadRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${configData.cloudName}/image/upload`,
+          { method: "POST", body: formData }
+        );
+        const uploadData = await uploadRes.json();
+
+        if (uploadData.error) {
+          throw new Error(uploadData.error.message);
+        }
+      } else if (configData.method === "unsigned") {
+        // Test unsigned upload
+        const testBlob = new Blob([
+          new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]),
+        ], { type: "image/png" });
+
+        const formData = new FormData();
+        formData.append("file", testBlob, "test.png");
+        formData.append("upload_preset", configData.uploadPreset);
+
+        const uploadRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${configData.cloudName}/image/upload`,
+          { method: "POST", body: formData }
+        );
+        const uploadData = await uploadRes.json();
+
+        if (uploadData.error) {
+          throw new Error(uploadData.error.message);
+        }
+      }
+
+      setCloudStatus("connected");
+      setCloudConfig(configData);
+      toast({
+        title: "✅ Cloudinary fonctionne !",
+        description: `Upload test réussi via méthode ${configData.method === "signed" ? "signée" : "unsigned"}.`,
+      });
+    } catch (err) {
       setCloudStatus("error");
-      toast({ title: "❌ Erreur", description: "Impossible de tester la connexion", variant: "destructive" });
+      toast({
+        title: "❌ Erreur Cloudinary",
+        description: err instanceof Error ? err.message : "Test échoué",
+        variant: "destructive",
+      });
     } finally {
       setTesting(false);
     }
@@ -322,57 +400,83 @@ export default function SettingsPage() {
                     <AlertCircle className="w-3 h-3" /> Erreur
                   </Badge>
                 )}
+                {cloudStatus === "unknown" && (
+                  <Badge className="bg-amber-100 text-amber-700 gap-1">
+                    <AlertCircle className="w-3 h-3" /> Non configuré
+                  </Badge>
+                )}
               </div>
 
+              {/* Real-time config status */}
+              {cloudConfig && (
+                <div className={cn(
+                  "mb-4 p-3 rounded-lg border flex items-center gap-2 text-xs",
+                  cloudConfig.configured
+                    ? "bg-yaa-green-50 dark:bg-yaa-green-950/30 border-yaa-green-200 text-yaa-green-700 dark:text-yaa-green-400"
+                    : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 text-amber-700 dark:text-amber-400"
+                )}>
+                  {cloudConfig.configured ? (
+                    <><CheckCircle2 className="w-4 h-4" /> Configuré — Cloud Name: <code className="font-mono bg-background/50 px-1 rounded">{cloudConfig.cloudName}</code> · Méthode: {cloudConfig.method === "signed" ? "Signée (sécurisée)" : "Unsigned (preset)"}</>
+                  ) : (
+                    <><AlertCircle className="w-4 h-4" /> Non configuré — suivez les instructions ci-dessous</>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-4">
-                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 flex items-start gap-3">
-                  <ImageIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">Comment configurer Cloudinary</p>
-                    <ol className="text-xs text-muted-foreground mt-1 space-y-0.5 list-decimal list-inside">
-                      <li>Créez un compte gratuit sur <a href="https://cloudinary.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">cloudinary.com</a></li>
-                      <li>Allez sur Dashboard → Account Details</li>
-                      <li>Copiez Cloud Name, API Key et API Secret</li>
-                      <li>Collez-les ci-dessous et cliquez "Tester"</li>
-                    </ol>
+                {/* Method 1: Unsigned (SIMPLE — RECOMMENDED) */}
+                <div className="p-4 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/20 border-2 border-yaa-green-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-yaa-green-500 text-white text-[10px]">RECOMMANDÉ</Badge>
+                    <p className="text-sm font-semibold text-yaa-green-700 dark:text-yaa-green-400">Méthode 1 : Unsigned Upload (simple)</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Pas de secret à gérer — idéal pour commencer. Crée un upload preset dans Cloudinary.
+                  </p>
+                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside mb-3">
+                    <li>Créez un compte gratuit sur <a href="https://cloudinary.com" target="_blank" rel="noopener noreferrer" className="text-yaa-green-600 underline font-semibold">cloudinary.com</a></li>
+                    <li>Allez sur <strong>Dashboard → Settings → Upload</strong></li>
+                    <li>Section <strong>"Upload presets"</strong> → cliquez <strong>"Add upload preset"</strong></li>
+                    <li>Nommez-le <code className="bg-background/50 px-1 rounded font-mono">yaa_unsigned</code> · Signing mode: <strong>Unsigned</strong> → Save</li>
+                    <li>Copiez votre <strong>Cloud Name</strong> (en haut du dashboard)</li>
+                    <li>Ajoutez ces 2 variables dans <strong>Vercel → Settings → Environment Variables</strong> (ou .env.local) :</li>
+                  </ol>
+                  <div className="p-3 bg-background rounded-md font-mono text-xs space-y-1 border">
+                    <div><span className="text-muted-foreground">NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</span>=<span className="text-yaa-green-600">votre_cloud_name</span></div>
+                    <div><span className="text-muted-foreground">NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</span>=<span className="text-yaa-green-600">yaa_unsigned</span></div>
                   </div>
                 </div>
 
-                <div className="grid sm:grid-cols-3 gap-3">
-                  <div>
-                    <Label htmlFor="cloud-name" className="text-xs font-semibold">Cloud Name *</Label>
-                    <Input
-                      id="cloud-name"
-                      placeholder="my-boutique"
-                      value={cloudName}
-                      onChange={(e) => setCloudName(e.target.value)}
-                      className="mt-1"
-                    />
+                {/* Method 2: Signed (SECURE) */}
+                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200">
+                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-2">Méthode 2 : Signed Upload (sécurisé)</p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Plus sécurisé — la signature est générée côté serveur. Utilisez cette méthode si vous voulez empêcher les uploads non autorisés.
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-2">Ajoutez ces 3 variables dans Vercel (ou .env.local) :</p>
+                  <div className="p-3 bg-background rounded-md font-mono text-xs space-y-1 border">
+                    <div><span className="text-muted-foreground">CLOUDINARY_CLOUD_NAME</span>=<span className="text-blue-600">votre_cloud_name</span></div>
+                    <div><span className="text-muted-foreground">CLOUDINARY_API_KEY</span>=<span className="text-blue-600">123456789012345</span></div>
+                    <div><span className="text-muted-foreground">CLOUDINARY_API_SECRET</span>=<span className="text-blue-600">votre_api_secret</span></div>
                   </div>
-                  <div>
-                    <Label htmlFor="api-key" className="text-xs font-semibold">API Key *</Label>
-                    <Input
-                      id="api-key"
-                      placeholder="123456789012345"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="api-secret" className="text-xs font-semibold">API Secret *</Label>
-                    <Input
-                      id="api-secret"
-                      type="password"
-                      placeholder="••••••••••••••••"
-                      value={apiSecret}
-                      onChange={(e) => setApiSecret(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    ℹ️ Vous trouverez ces infos dans Cloudinary Dashboard → Account Details → API Keys.
+                  </p>
                 </div>
 
-                <div className="flex gap-2">
+                {/* Vercel instructions */}
+                <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200">
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">📋 Pour Vercel (production) :</p>
+                  <ol className="text-[11px] text-muted-foreground space-y-0.5 list-decimal list-inside">
+                    <li>Allez sur <a href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-amber-600 underline">vercel.com/dashboard</a> → votre projet YAA</li>
+                    <li><strong>Settings → Environment Variables</strong></li>
+                    <li>Ajoutez les variables ci-dessus (une par une)</li>
+                    <li>Cliquez <strong>"Redeploy"</strong> pour appliquer les changements</li>
+                  </ol>
+                </div>
+
+                {/* Test button */}
+                <div className="flex gap-2 pt-2">
                   <Button
                     onClick={handleTestCloudinary}
                     disabled={testing}
@@ -380,13 +484,19 @@ export default function SettingsPage() {
                     className="gap-1.5"
                   >
                     {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
-                    {testing ? "Test en cours..." : "Tester la connexion"}
+                    {testing ? "Test en cours..." : "Tester l'upload"}
                   </Button>
                   <Button
-                    onClick={() => toast({ title: "Configuration sauvegardée" })}
-                    className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5"
+                    onClick={() => {
+                      fetch("/api/cloudinary/config").then(r => r.json()).then(data => {
+                        setCloudConfig(data);
+                        setCloudStatus(data.configured ? "connected" : "error");
+                      });
+                    }}
+                    variant="ghost"
+                    className="gap-1.5"
                   >
-                    <Save className="w-4 h-4" /> Sauvegarder
+                    <RefreshCw className="w-4 h-4" /> Rafraîchir
                   </Button>
                 </div>
               </div>
