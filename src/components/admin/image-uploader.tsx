@@ -37,6 +37,7 @@ export function ImageUploader({
   const [uploading, setUploading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [storageReady, setStorageReady] = React.useState<boolean | null>(null);
+  const [creatingBucket, setCreatingBucket] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   // Check on mount if Supabase Storage bucket is accessible
@@ -49,19 +50,49 @@ export function ImageUploader({
       const { error } = await supabase.storage
         .from("yaa-products")
         .list("", { limit: 1 });
-      // If error is "Bucket not found", bucket doesn't exist yet
-      if (error && error.message.includes("not found")) {
+      if (error && (error.message.includes("not found") || error.message.includes("Bucket"))) {
         setStorageReady(false);
+        // Auto-create bucket via API
+        await autoCreateBucket();
       } else {
         setStorageReady(true);
       }
     } catch {
       setStorageReady(false);
+      await autoCreateBucket();
+    }
+  }
+
+  // Auto-create the bucket via server-side API (uses service_role)
+  async function autoCreateBucket() {
+    setCreatingBucket(true);
+    try {
+      const res = await fetch("/api/setup/storage", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setStorageReady(true);
+      } else {
+        console.warn("[ImageUploader] Auto-create bucket failed:", data.error);
+        setStorageReady(false);
+      }
+    } catch (err) {
+      console.warn("[ImageUploader] Auto-create bucket error:", err);
+      setStorageReady(false);
+    } finally {
+      setCreatingBucket(false);
     }
   }
 
   // Upload to Supabase Storage (default — no config needed)
   const uploadToSupabase = async (file: File): Promise<UploadResult> => {
+    // If bucket not ready, try to create it first
+    if (storageReady === false) {
+      await autoCreateBucket();
+      if (storageReady === false) {
+        throw new Error("Le bucket de stockage n'est pas accessible. Exécutez le SQL dans Supabase Dashboard.");
+      }
+    }
+
     // Generate a unique filename
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
@@ -75,7 +106,32 @@ export function ImageUploader({
         contentType: file.type,
       });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      // If bucket still not found, try creating it
+      if (uploadError.message.includes("Bucket not found")) {
+        await autoCreateBucket();
+        // Retry upload
+        const { data: retryData, error: retryError } = await supabase.storage
+          .from("yaa-products")
+          .upload(path, file, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: file.type,
+          });
+        if (retryError) throw retryError;
+        // Get public URL for retry
+        const { data: retryUrlData } = supabase.storage
+          .from("yaa-products")
+          .getPublicUrl(path);
+        return {
+          secure_url: retryUrlData.publicUrl,
+          public_id: path,
+          width: 0,
+          height: 0,
+        };
+      }
+      throw uploadError;
+    }
 
     // Get the public URL
     const { data: urlData } = supabase.storage
@@ -157,25 +213,39 @@ export function ImageUploader({
       <label className="text-xs font-semibold mb-1.5 block">{label}</label>
 
       {/* Status banner */}
-      {storageReady === false && (
+      {creatingBucket && (
+        <div className="mb-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 flex items-center gap-2 text-blue-700 dark:text-blue-400">
+          <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+          <p className="text-[11px] font-semibold">Création automatique du bucket de stockage en cours...</p>
+        </div>
+      )}
+
+      {storageReady === false && !creatingBucket && (
         <div className="mb-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 flex items-start gap-2 text-amber-700 dark:text-amber-400">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <div className="text-[11px]">
+          <div className="text-[11px] flex-1">
             <p className="font-semibold mb-1">Bucket de stockage requis</p>
-            <p>
-              Exécutez ce SQL dans Supabase Dashboard → SQL Editor pour créer le bucket :
+            <p className="mb-2">
+              La création automatique a échoué. Exécutez ce SQL dans Supabase Dashboard → SQL Editor :
             </p>
-            <pre className="mt-1 p-2 bg-amber-100 dark:bg-amber-900/50 rounded text-[10px] overflow-x-auto whitespace-pre-wrap break-all">
+            <pre className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded text-[10px] overflow-x-auto whitespace-pre-wrap break-all">
 {`insert into storage.buckets (id, name, public)
 values ('yaa-products', 'yaa-products', true)
-on conflict (id) do nothing;`}
+on conflict (id) do nothing;
+
+create policy "Public read" on storage.objects
+  for select using (bucket_id = 'yaa-products');
+create policy "Auth upload" on storage.objects
+  for insert with check (bucket_id = 'yaa-products' and auth.role() = 'authenticated');
+create policy "Auth delete" on storage.objects
+  for delete using (bucket_id = 'yaa-products' and auth.role() = 'authenticated');`}
             </pre>
             <button
               type="button"
               onClick={checkStorageBucket}
-              className="mt-1 text-amber-700 underline text-[10px] font-semibold"
+              className="mt-2 text-amber-700 underline text-[10px] font-semibold"
             >
-              Re-vérifier
+              Réessayer la création auto
             </button>
           </div>
         </div>
