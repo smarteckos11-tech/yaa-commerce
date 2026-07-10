@@ -48,7 +48,7 @@ function NewProductPage() {
   const [stock, setStock] = React.useState("");
   const [weight, setWeight] = React.useState("");
   const [description, setDescription] = React.useState("");
-  const [images, setImages] = React.useState<{ secure_url: string; public_id: string }[]>([]);
+  const [images, setImages] = React.useState<{ secure_url: string; public_id: string; width: number; height: number }[]>([]);
   const [trackInventory, setTrackInventory] = React.useState(true);
 
   // Derived from type — true only for physical products
@@ -105,7 +105,8 @@ Retour gratuit sous 7 jours`;
         price: parseInt(price) || 0,
         stock: isPhysical && trackInventory ? parseInt(stock) || 0 : null,
         description: description || null,
-        image_url: images[0]?.secure_url || null,
+        image_url: images[0]?.secure_url || null, // backwards compat
+        images: images.map((img) => img.secure_url), // array of all image URLs
         status: "actif",
       };
 
@@ -173,8 +174,14 @@ Retour gratuit sous 7 jours`;
           setPrice(data.price ? String(data.price) : "");
           setStock(data.stock !== null ? String(data.stock) : "");
           setDescription(data.description || "");
-          if (data.image_url) {
-            setImages([{ secure_url: data.image_url, public_id: "" }]);
+          // Load all images (from 'images' array, fallback to image_url)
+          const allImages = Array.isArray(data.images) && data.images.length > 0
+            ? data.images
+            : data.image_url
+            ? [data.image_url]
+            : [];
+          if (allImages.length > 0) {
+            setImages(allImages.map((url: string) => ({ secure_url: url, public_id: "", width: 0, height: 0 })));
           }
           if (data.stock === null) setTrackInventory(false);
         }

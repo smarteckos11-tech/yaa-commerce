@@ -583,3 +583,10 @@ do $$ begin
   create policy "Authenticated update yaa-products" on storage.objects
     for update using (bucket_id = 'yaa-products' and auth.role() = 'authenticated');
 exception when duplicate_object then null; end $$;
+
+-- ============================================================
+-- 26. PRODUCTS — Ajout colonne 'images' (JSONB array d'URLs)
+-- ============================================================
+-- Permet de stocker plusieurs images par produit (galerie)
+-- L'ancienne colonne 'image_url' est conservée pour compatibilité
+alter table public.products add column if not exists images jsonb default '[]'::jsonb;

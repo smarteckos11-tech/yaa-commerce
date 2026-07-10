@@ -45,6 +45,7 @@ type Product = {
   description: string | null;
   price: number;
   image_url: string | null;
+  images: string[] | null; // JSONB array of image URLs
   category: string | null;
   stock: number | null;
   type: string;
@@ -292,7 +293,16 @@ export default function ProductPage() {
     );
   }
 
-  const images = product.image_url ? [product.image_url] : [];
+  // Build images array: use 'images' JSONB column if available, fallback to image_url
+  const images = React.useMemo(() => {
+    if (!product) return [];
+    const allImages = Array.isArray(product.images) && product.images.length > 0
+      ? product.images
+      : product.image_url
+      ? [product.image_url]
+      : [];
+    return allImages;
+  }, [product]);
   const inStock = product.type === "digital" || product.stock === null || (product.stock ?? 0) > 0;
   const avgRating = 4.8;
   const reviewCount = MOCK_REVIEWS.length;
@@ -806,7 +816,7 @@ export default function ProductPage() {
           >
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden flex-shrink-0 hidden sm:block">
-                {product.image_url ? <img src={product.image_url} alt="" className="w-full h-full object-cover" /> : <Store className="w-5 h-5 text-muted-foreground/30 m-auto mt-2.5" />}
+                {images[0] ? <img src={images[0]} alt="" className="w-full h-full object-cover" /> : <Store className="w-5 h-5 text-muted-foreground/30 m-auto mt-2.5" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold truncate">{product.name}</p>
