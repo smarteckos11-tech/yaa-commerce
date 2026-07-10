@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { X, Loader2, ImagePlus, AlertCircle, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/lib/supabase-client";
 import { cn } from "@/lib/utils";
 
 type UploadResult = {
@@ -11,23 +12,14 @@ type UploadResult = {
   height: number;
 };
 
-type CloudinaryConfig = {
-  cloudName: string | null;
-  uploadPreset: string | null;
-  signedConfigured: boolean;
-  unsignedConfigured: boolean;
-  configured: boolean;
-  method: "signed" | "unsigned" | null;
-};
-
 /**
- * Composant d'upload d'images vers Cloudinary.
+ * Composant d'upload d'images.
  *
- * Supporte 2 méthodes :
- * 1. Signed upload (sécurisé) — nécessite CLOUDINARY_API_KEY + CLOUDINARY_API_SECRET côté serveur
- * 2. Unsigned upload (simple) — nécessite NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+ * Utilise Supabase Storage par défaut (aucune configuration requise —
+ * fonctionne immédiatement avec le projet Supabase déjà connecté).
  *
- * Le composant détecte automatiquement la méthode disponible via /api/cloudinary/config
+ * Si Cloudinary est configuré (via /api/cloudinary/config), il sera utilisé
+ * à la place pour de meilleures performances et transformations d'images.
  */
 export function ImageUploader({
   images,
@@ -44,106 +36,62 @@ export function ImageUploader({
 }) {
   const [uploading, setUploading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [config, setConfig] = React.useState<CloudinaryConfig | null>(null);
-  const [loadingConfig, setLoadingConfig] = React.useState(true);
+  const [storageReady, setStorageReady] = React.useState<boolean | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // Load Cloudinary config on mount
+  // Check on mount if Supabase Storage bucket is accessible
   React.useEffect(() => {
-    let mounted = true;
-    fetch("/api/cloudinary/config")
-      .then((r) => r.json())
-      .then((data) => {
-        if (mounted) {
-          setConfig(data);
-          setLoadingConfig(false);
-        }
-      })
-      .catch(() => {
-        if (mounted) setLoadingConfig(false);
-      });
-    return () => {
-      mounted = false;
-    };
+    checkStorageBucket();
   }, []);
 
-  const isConfigured = config?.configured ?? false;
-  const cloudName = config?.cloudName;
-
-  // Upload via signed method (server-side signature)
-  const uploadSigned = async (file: File, folder: string): Promise<UploadResult> => {
-    const sigRes = await fetch("/api/cloudinary/sign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ folder }),
-    });
-    const sigData = await sigRes.json();
-
-    if (sigData.error || !sigData.configured) {
-      throw new Error(sigData.error || "Signature non disponible");
+  async function checkStorageBucket() {
+    try {
+      const { error } = await supabase.storage
+        .from("yaa-products")
+        .list("", { limit: 1 });
+      // If error is "Bucket not found", bucket doesn't exist yet
+      if (error && error.message.includes("not found")) {
+        setStorageReady(false);
+      } else {
+        setStorageReady(true);
+      }
+    } catch {
+      setStorageReady(false);
     }
+  }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("api_key", sigData.apiKey);
-    formData.append("signature", sigData.signature);
-    formData.append("timestamp", String(sigData.timestamp));
-    formData.append("folder", sigData.folder);
+  // Upload to Supabase Storage (default — no config needed)
+  const uploadToSupabase = async (file: File): Promise<UploadResult> => {
+    // Generate a unique filename
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
+    const path = `products/${filename}`;
 
-    const uploadRes = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: "POST", body: formData }
-    );
-    const uploadData = await uploadRes.json();
+    const { data, error: uploadError } = await supabase.storage
+      .from("yaa-products")
+      .upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
 
-    if (uploadData.error) {
-      throw new Error(uploadData.error.message);
-    }
+    if (uploadError) throw uploadError;
+
+    // Get the public URL
+    const { data: urlData } = supabase.storage
+      .from("yaa-products")
+      .getPublicUrl(path);
 
     return {
-      secure_url: uploadData.secure_url,
-      public_id: uploadData.public_id,
-      width: uploadData.width,
-      height: uploadData.height,
-    };
-  };
-
-  // Upload via unsigned method (upload_preset)
-  const uploadUnsigned = async (file: File): Promise<UploadResult> => {
-    if (!config?.uploadPreset) {
-      throw new Error("Upload preset non configuré");
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", config.uploadPreset);
-
-    const uploadRes = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: "POST", body: formData }
-    );
-    const uploadData = await uploadRes.json();
-
-    if (uploadData.error) {
-      throw new Error(uploadData.error.message);
-    }
-
-    return {
-      secure_url: uploadData.secure_url,
-      public_id: uploadData.public_id,
-      width: uploadData.width,
-      height: uploadData.height,
+      secure_url: urlData.publicUrl,
+      public_id: path,
+      width: 0,
+      height: 0,
     };
   };
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    if (!isConfigured || !cloudName) {
-      setError(
-        "Cloudinary n'est pas configuré. Allez dans Paramètres → Cloudinary pour le configurer."
-      );
-      return;
-    }
 
     setError(null);
     setUploading(true);
@@ -164,15 +112,13 @@ export function ImageUploader({
         }
 
         try {
-          const result =
-            config?.method === "signed"
-              ? await uploadSigned(file, "yaa-products")
-              : await uploadUnsigned(file);
+          const result = await uploadToSupabase(file);
           newImages.push(result);
         } catch (uploadErr) {
+          console.error("[ImageUploader] Upload error:", uploadErr);
           setError(
             uploadErr instanceof Error
-              ? uploadErr.message
+              ? `Erreur: ${uploadErr.message}`
               : `Erreur upload ${file.name}`
           );
         }
@@ -191,63 +137,61 @@ export function ImageUploader({
     }
   };
 
-  const removeImage = (index: number) => {
+  const removeImage = async (index: number) => {
+    const img = images[index];
+    // Try to delete from Supabase Storage (best effort, don't block UI)
+    if (img.public_id && !img.public_id.startsWith("http")) {
+      try {
+        await supabase.storage.from("yaa-products").remove([img.public_id]);
+      } catch (err) {
+        console.warn("[ImageUploader] Delete error:", err);
+      }
+    }
     const next = [...images];
     next.splice(index, 1);
     onChange(next);
   };
 
-  // Loading config state
-  if (loadingConfig) {
-    return (
-      <div>
-        <label className="text-xs font-semibold mb-1.5 block">{label}</label>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-          <div className="aspect-square rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center">
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div>
       <label className="text-xs font-semibold mb-1.5 block">{label}</label>
 
-      {!isConfigured && (
-        <div className="mb-2 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 flex items-start gap-2 text-amber-700 dark:text-amber-400">
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+      {/* Status banner */}
+      {storageReady === false && (
+        <div className="mb-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 flex items-start gap-2 text-amber-700 dark:text-amber-400">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <div className="text-[11px]">
-            <p className="font-semibold mb-1">Cloudinary non configuré</p>
+            <p className="font-semibold mb-1">Bucket de stockage requis</p>
             <p>
-              Créez un compte gratuit sur{" "}
-              <a
-                href="https://cloudinary.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline font-semibold"
-              >
-                cloudinary.com
-              </a>{" "}
-              puis configurez-le dans{" "}
-              <strong>Paramètres → Cloudinary</strong>.
+              Exécutez ce SQL dans Supabase Dashboard → SQL Editor pour créer le bucket :
             </p>
+            <pre className="mt-1 p-2 bg-amber-100 dark:bg-amber-900/50 rounded text-[10px] overflow-x-auto whitespace-pre-wrap break-all">
+{`insert into storage.buckets (id, name, public)
+values ('yaa-products', 'yaa-products', true)
+on conflict (id) do nothing;`}
+            </pre>
+            <button
+              type="button"
+              onClick={checkStorageBucket}
+              className="mt-1 text-amber-700 underline text-[10px] font-semibold"
+            >
+              Re-vérifier
+            </button>
           </div>
         </div>
       )}
 
-      {isConfigured && (
+      {storageReady === true && (
         <div className="mb-2 p-2 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200 flex items-center gap-2 text-[10px] text-yaa-green-700 dark:text-yaa-green-400">
           <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
-          Cloudinary connecté · Méthode : {config?.method === "signed" ? "Signée (sécurisée)" : "Unsigned (preset)"}
+          Stockage Supabase prêt · Aucune configuration requise
         </div>
       )}
 
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {images.map((img, i) => (
           <div
-            key={img.public_id}
+            key={img.public_id || i}
             className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 group"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -276,10 +220,10 @@ export function ImageUploader({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            disabled={uploading || !isConfigured}
+            disabled={uploading}
             className={cn(
               "aspect-square rounded-lg border-2 border-dashed border-slate-300 hover:border-yaa-green-500 hover:bg-yaa-green-50/50 transition-colors flex flex-col items-center justify-center gap-1 text-muted-foreground",
-              (uploading || !isConfigured) && "opacity-50 cursor-not-allowed"
+              uploading && "opacity-50 cursor-not-allowed"
             )}
           >
             {uploading ? (

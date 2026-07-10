@@ -550,3 +550,36 @@ exception when duplicate_object then null; end $$;
 create index if not exists idx_marketplace_apps_status on public.marketplace_apps(status);
 create index if not exists idx_marketplace_apps_category on public.marketplace_apps(category);
 create index if not exists idx_marketplace_apps_slug on public.marketplace_apps(slug);
+
+-- ============================================================
+-- 25. SUPABASE STORAGE — Bucket pour les images produits
+-- ============================================================
+-- Crée le bucket public "yaa-products" pour stocker les images
+insert into storage.buckets (id, name, public)
+values ('yaa-products', 'yaa-products', true)
+on conflict (id) do nothing;
+
+-- Politiques RLS pour le bucket yaa-products
+-- Tout le monde peut lire (public)
+do $$ begin
+  create policy "Public read access yaa-products" on storage.objects
+    for select using (bucket_id = 'yaa-products');
+exception when duplicate_object then null; end $$;
+
+-- Utilisateurs authentifiés peuvent uploader
+do $$ begin
+  create policy "Authenticated upload yaa-products" on storage.objects
+    for insert with check (bucket_id = 'yaa-products' and auth.role() = 'authenticated');
+exception when duplicate_object then null; end $$;
+
+-- Utilisateurs authentifiés peuvent supprimer leurs fichiers
+do $$ begin
+  create policy "Authenticated delete yaa-products" on storage.objects
+    for delete using (bucket_id = 'yaa-products' and auth.role() = 'authenticated');
+exception when duplicate_object then null; end $$;
+
+-- Utilisateurs authentifiés peuvent mettre à jour leurs fichiers
+do $$ begin
+  create policy "Authenticated update yaa-products" on storage.objects
+    for update using (bucket_id = 'yaa-products' and auth.role() = 'authenticated');
+exception when duplicate_object then null; end $$;

@@ -375,8 +375,68 @@ export default function SettingsPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* === CLOUDINARY TAB === */}
+          {/* === STOCKAGE TAB (renamed from cloudinary) === */}
           <TabsContent value="cloudinary" className="mt-0 space-y-4">
+            {/* ===== Supabase Storage (DEFAULT — already working) ===== */}
+            <Card className="p-5 lg:p-6 border-2 border-yaa-green-300">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yaa-green-500 to-emerald-600 flex items-center justify-center">
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="font-display font-semibold flex items-center gap-2">
+                      Supabase Storage
+                      <Badge className="bg-yaa-green-500 text-white text-[10px]">PAR DÉFAUT</Badge>
+                    </h2>
+                    <p className="text-xs text-muted-foreground">Stockage des images — fonctionne immédiatement, sans configuration</p>
+                  </div>
+                </div>
+                <Badge className="bg-yaa-green-100 text-yaa-green-700 gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Actif
+                </Badge>
+              </div>
+
+              <div className="p-4 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200">
+                <p className="text-sm font-semibold text-yaa-green-700 dark:text-yaa-green-400 mb-2">
+                  ✅ Vos images sont stockées dans Supabase Storage
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• <strong>Aucune configuration requise</strong> — fonctionne immédiatement</li>
+                  <li>• <strong>Gratuit</strong> : 1 Go de stockage + 2 Go de bande passante/mois inclus</li>
+                  <li>• <strong>Intégré</strong> à votre projet Supabase existant</li>
+                  <li>• <strong>URLs publiques</strong> accessibles directement dans la boutique</li>
+                  <li>• <strong>Sécurisé</strong> — Row Level Security activé</li>
+                </ul>
+              </div>
+
+              <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200">
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">⚠️ Si l'upload ne fonctionne pas</p>
+                <p className="text-[11px] text-muted-foreground mb-2">
+                  Le bucket <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded font-mono">yaa-products</code> doit exister dans Supabase.
+                  Exécutez ce SQL dans Supabase Dashboard → SQL Editor :
+                </p>
+                <pre className="p-2 bg-background rounded text-[10px] overflow-x-auto whitespace-pre-wrap break-all border">
+{`insert into storage.buckets (id, name, public)
+values ('yaa-products', 'yaa-products', true)
+on conflict (id) do nothing;
+
+-- Autoriser tout le monde à lire (public)
+create policy "Public read access" on storage.objects
+  for select using (bucket_id = 'yaa-products');
+
+-- Autoriser les utilisateurs authentifiés à uploader
+create policy "Authenticated upload" on storage.objects
+  for insert with check (bucket_id = 'yaa-products' and auth.role() = 'authenticated');
+
+-- Autoriser les utilisateurs à supprimer leurs fichiers
+create policy "Users delete own files" on storage.objects
+  for delete using (bucket_id = 'yaa-products' and auth.role() = 'authenticated');`}
+                </pre>
+              </div>
+            </Card>
+
+            {/* ===== Cloudinary (OPTIONAL — advanced) ===== */}
             <Card className="p-5 lg:p-6">
               <div className="flex items-start justify-between mb-5">
                 <div>
@@ -385,8 +445,11 @@ export default function SettingsPage() {
                       <Cloud className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="font-display font-semibold">Stockage Cloudinary</h2>
-                      <p className="text-xs text-muted-foreground">Gérez vos images produits, boutique, blog et médias</p>
+                      <h2 className="font-display font-semibold flex items-center gap-2">
+                        Cloudinary
+                        <Badge variant="outline" className="text-[10px]">OPTIONNEL</Badge>
+                      </h2>
+                      <p className="text-xs text-muted-foreground">Stockage avancé avec transformations d'images (CDN global, compression auto)</p>
                     </div>
                   </div>
                 </div>
@@ -401,10 +464,17 @@ export default function SettingsPage() {
                   </Badge>
                 )}
                 {cloudStatus === "unknown" && (
-                  <Badge className="bg-amber-100 text-amber-700 gap-1">
-                    <AlertCircle className="w-3 h-3" /> Non configuré
+                  <Badge className="bg-muted text-muted-foreground gap-1">
+                    Non configuré
                   </Badge>
                 )}
+              </div>
+
+              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 text-xs text-muted-foreground mb-4">
+                <Cloud className="w-3.5 h-3.5 inline mr-1 text-blue-600" />
+                <strong>Cloudinary est optionnel.</strong> Supabase Storage suffit pour démarrer.
+                Passez à Cloudinary si vous voulez : compression automatique, redimensionnement à la volée,
+                CDN global, transformations d'images avancées.
               </div>
 
               {/* Real-time config status */}
