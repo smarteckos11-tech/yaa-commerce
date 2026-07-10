@@ -27,6 +27,7 @@ import {
   Eye,
   ArrowRight,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -35,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase-client";
 import { useCart } from "@/lib/cart-store";
 import { ProductReviews } from "@/components/storefront/product-reviews";
+import { OrderForm } from "@/components/storefront/order-form";
 import { cn } from "@/lib/utils";
 
 type Product = {
@@ -125,6 +127,8 @@ export default function ProductPage() {
   const [zoomPos, setZoomPos] = React.useState({ x: 50, y: 50 });
   const [openFAQ, setOpenFAQ] = React.useState<number | null>(0);
   const [showStickyBar, setShowStickyBar] = React.useState(false);
+  const [showOrderForm, setShowOrderForm] = React.useState(false);
+  const [showBundleOrderForm, setShowBundleOrderForm] = React.useState<string | null>(null);
 
   const add = useCart((s) => s.add);
 
@@ -451,12 +455,55 @@ export default function ProductPage() {
                   <ShoppingCart className="w-4 h-4" />
                   {justAdded ? "✓ Ajouté au panier !" : inStock ? "Ajouter au panier" : "Rupture de stock"}
                 </Button>
-                <Button size="lg" variant="outline" className="border-[#25D366] text-[#1da851] hover:bg-[#25D366]/10 gap-2 h-12" asChild>
+                <Button
+                  size="lg"
+                  variant={showOrderForm ? "default" : "outline"}
+                  disabled={!inStock}
+                  onClick={() => setShowOrderForm(!showOrderForm)}
+                  className={cn(
+                    "gap-2 h-12",
+                    showOrderForm
+                      ? "bg-yaa-orange-500 hover:bg-yaa-orange-600"
+                      : "border-yaa-orange-300 text-yaa-orange-600 hover:bg-yaa-orange-50"
+                  )}
+                >
+                  {showOrderForm ? <X className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                  {showOrderForm ? "Annuler" : "Commander direct"}
+                </Button>
+              </div>
+
+              {/* Bouton WhatsApp (optionnel) */}
+              {!showOrderForm && (
+                <Button size="lg" variant="outline" className="border-[#25D366] text-[#1da851] hover:bg-[#25D366]/10 gap-2 h-12 w-full" asChild>
                   <a href={`https://wa.me/?text=Bonjour, je suis intéressé par ${encodeURIComponent(product.name)} à ${formatFCFA(product.price)}`} target="_blank" rel="noopener noreferrer">
                     <MessageCircle className="w-4 h-4" /> Commander sur WhatsApp
                   </a>
                 </Button>
-              </div>
+              )}
+
+              {/* Formulaire de commande direct (inline) */}
+              {showOrderForm && inStock && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <OrderForm
+                    items={[{
+                      productId: product.id,
+                      name: product.name,
+                      price: product.price,
+                      quantity,
+                    }]}
+                    userId={product.user_id}
+                    slug={slug}
+                    title="Commande express"
+                    promoCode={appliedPromo}
+                    promoDiscount={promoCodes.find((p) => p.code === appliedPromo)?.type === "percentage" ? promoCodes.find((p) => p.code === appliedPromo)!.value : 0}
+                  />
+                </motion.div>
+              )}
 
               {/* COD badge */}
               <div className="p-3 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200 flex items-center gap-2">
@@ -538,12 +585,55 @@ export default function ProductPage() {
                       <span className="text-[10px] text-muted-foreground">{bundle.sold_count || 0} vendus</span>
                     </div>
 
-                    <Button
-                      className="w-full mt-3 bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5"
-                      onClick={() => handleAddBundle(bundle)}
-                    >
-                      <ShoppingCart className="w-4 h-4" /> Ajouter le bundle au panier
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      <Button
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={() => handleAddBundle(bundle)}
+                      >
+                        <ShoppingCart className="w-4 h-4" /> Panier
+                      </Button>
+                      <Button
+                        className={cn(
+                          "gap-1.5",
+                          showBundleOrderForm === bundle.id
+                            ? "bg-yaa-orange-500 hover:bg-yaa-orange-600"
+                            : "bg-yaa-green-500 hover:bg-yaa-green-600"
+                        )}
+                        onClick={() =>
+                          setShowBundleOrderForm(showBundleOrderForm === bundle.id ? null : bundle.id)
+                        }
+                      >
+                        {showBundleOrderForm === bundle.id ? (
+                          <><X className="w-4 h-4" /> Annuler</>
+                        ) : (
+                          <><Zap className="w-4 h-4" /> Commander</>
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Formulaire de commande direct pour le bundle */}
+                    {showBundleOrderForm === bundle.id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden mt-3"
+                      >
+                        <OrderForm
+                          items={bundle.products.map((p) => ({
+                            productId: p.id || `bundle-${bundle.id}-${p.name}`,
+                            name: p.name,
+                            price: p.price,
+                            quantity: 1,
+                          }))}
+                          userId={product.user_id}
+                          slug={slug}
+                          title={`Commander "${bundle.name}"`}
+                          fixedTotal={bundle.bundle_price}
+                        />
+                      </motion.div>
+                    )}
                   </Card>
                 );
               })}
