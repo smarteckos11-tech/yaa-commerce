@@ -115,26 +115,65 @@ Retour gratuit sous 7 jours`;
       let data: any = null;
       let error: any = null;
 
-      if (isEditing && editId) {
-        // Update existing product
-        const result = await supabase
-          .from("products")
-          .update(productData)
-          .eq("id", editId)
-          .eq("user_id", user.id)
-          .select()
-          .single();
-        data = result.data;
-        error = result.error;
-      } else {
-        // Insert new product
-        const result = await supabase
-          .from("products")
-          .insert(productData)
-          .select()
-          .single();
-        data = result.data;
-        error = result.error;
+      const executeQuery = async (data_to_save: any) => {
+        if (isEditing && editId) {
+          return await supabase
+            .from("products")
+            .update(data_to_save)
+            .eq("id", editId)
+            .eq("user_id", user.id)
+            .select()
+            .single();
+        } else {
+          return await supabase
+            .from("products")
+            .insert(data_to_save)
+            .select()
+            .single();
+        }
+      };
+
+      // Try with all columns (images + video_url)
+      const result = await executeQuery(productData);
+      data = result.data;
+      error = result.error;
+
+      // If error is about missing columns, retry without 'images' and 'video_url'
+      if (error && (error.message?.includes("column") || error.message?.includes("Could not find"))) {
+        console.warn("[Product] Columns missing, retrying without images/video_url...");
+
+        // Try to auto-add columns
+        try {
+          await fetch("/api/setup/products-columns", { method: "POST" });
+        } catch {}
+
+        // Fallback: save without new columns
+        const fallbackData = {
+          user_id: user.id,
+          name,
+          sku: sku || null,
+          category: category || null,
+          type: type,
+          price: parseInt(price) || 0,
+          stock: isPhysical && trackInventory ? parseInt(stock) || 0 : null,
+          description: description || null,
+          image_url: images[0]?.secure_url || null,
+          status: "actif",
+        };
+
+        const retryResult = await executeQuery(fallbackData);
+        data = retryResult.data;
+        error = retryResult.error;
+
+        if (!error) {
+          toast({
+            title: "Produit créé ✓",
+            description: `${name} ajouté. ⚠️ Pour activer les images multiples et vidéos, exécutez le SQL dans Supabase Dashboard (voir console).`,
+          });
+          router.push("/admin/produits");
+          router.refresh();
+          return;
+        }
       }
 
       if (error) throw error;

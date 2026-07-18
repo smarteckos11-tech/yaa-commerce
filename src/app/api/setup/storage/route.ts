@@ -38,36 +38,40 @@ export async function POST() {
 
     // 3. Créer les politiques RLS via SQL (Supabase admin peut exécuter du SQL)
     // Politique 1 : lecture publique
-    const { error: policy1Error } = await supabaseAdmin.rpc("exec_sql", {
-      sql_query: `
-        create policy "Public read access yaa-products" on storage.objects
-          for select using (bucket_id = 'yaa-products');
-      `,
-    }).catch(() => ({ error: null })); // Ignore si la policy existe déjà
+    let policy1Error: any = null;
+    try {
+      const r1 = await supabaseAdmin.rpc("exec_sql", {
+        sql_query: `create policy "Public read access yaa-products" on storage.objects for select using (bucket_id = 'yaa-products');`,
+      });
+      policy1Error = r1.error;
+    } catch { policy1Error = null; }
 
     // Politique 2 : upload pour authentifiés
-    const { error: policy2Error } = await supabaseAdmin.rpc("exec_sql", {
-      sql_query: `
-        create policy "Authenticated upload yaa-products" on storage.objects
-          for insert with check (bucket_id = 'yaa-products' and auth.role() = 'authenticated');
-      `,
-    }).catch(() => ({ error: null }));
+    let policy2Error: any = null;
+    try {
+      const r2 = await supabaseAdmin.rpc("exec_sql", {
+        sql_query: `create policy "Authenticated upload yaa-products" on storage.objects for insert with check (bucket_id = 'yaa-products' and auth.role() = 'authenticated');`,
+      });
+      policy2Error = r2.error;
+    } catch { policy2Error = null; }
 
     // Politique 3 : suppression pour authentifiés
-    const { error: policy3Error } = await supabaseAdmin.rpc("exec_sql", {
-      sql_query: `
-        create policy "Authenticated delete yaa-products" on storage.objects
-          for delete using (bucket_id = 'yaa-products' and auth.role() = 'authenticated');
-      `,
-    }).catch(() => ({ error: null }));
+    let policy3Error: any = null;
+    try {
+      const r3 = await supabaseAdmin.rpc("exec_sql", {
+        sql_query: `create policy "Authenticated delete yaa-products" on storage.objects for delete using (bucket_id = 'yaa-products' and auth.role() = 'authenticated');`,
+      });
+      policy3Error = r3.error;
+    } catch { policy3Error = null; }
 
     // Politique 4 : mise à jour pour authentifiés
-    const { error: policy4Error } = await supabaseAdmin.rpc("exec_sql", {
-      sql_query: `
-        create policy "Authenticated update yaa-products" on storage.objects
-          for update using (bucket_id = 'yaa-products' and auth.role() = 'authenticated');
-      `,
-    }).catch(() => ({ error: null }));
+    let policy4Error: any = null;
+    try {
+      const r4 = await supabaseAdmin.rpc("exec_sql", {
+        sql_query: `create policy "Authenticated update yaa-products" on storage.objects for update using (bucket_id = 'yaa-products' and auth.role() = 'authenticated');`,
+      });
+      policy4Error = r4.error;
+    } catch { policy4Error = null; }
 
     // Note: les RPC peuvent échouer si exec_sql n'existe pas, mais le bucket est créé
     // Les policies peuvent être créées manuellement si nécessaire
