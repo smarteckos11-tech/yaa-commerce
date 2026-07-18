@@ -175,7 +175,6 @@ function ProductPage() {
   const [zoomPos, setZoomPos] = React.useState({ x: 50, y: 50 });
   const [openFAQ, setOpenFAQ] = React.useState<number | null>(0);
   const [showStickyBar, setShowStickyBar] = React.useState(false);
-  const [showOrderForm, setShowOrderForm] = React.useState(false);
   const [showBundleOrderForm, setShowBundleOrderForm] = React.useState<string | null>(null);
   const [showVideo, setShowVideo] = React.useState(false);
 
@@ -573,64 +572,46 @@ function ProductPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <Button size="lg" disabled={!inStock} onClick={handleAddToCart} className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-2 h-12">
+              {/* Boutons secondaires */}
+              <div className="grid grid-cols-2 gap-2">
+                <Button size="lg" disabled={!inStock} onClick={handleAddToCart} variant="outline" className="gap-2 h-11">
                   <ShoppingCart className="w-4 h-4" />
-                  {justAdded ? "✓ Ajouté au panier !" : inStock ? "Ajouter au panier" : "Rupture de stock"}
+                  {justAdded ? "✓ Ajouté !" : "Ajouter au panier"}
                 </Button>
-                <Button
-                  size="lg"
-                  variant={showOrderForm ? "default" : "outline"}
-                  disabled={!inStock}
-                  onClick={() => setShowOrderForm(!showOrderForm)}
-                  className={cn(
-                    "gap-2 h-12",
-                    showOrderForm
-                      ? "bg-yaa-orange-500 hover:bg-yaa-orange-600"
-                      : "border-yaa-orange-300 text-yaa-orange-600 hover:bg-yaa-orange-50"
-                  )}
-                >
-                  {showOrderForm ? <X className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                  {showOrderForm ? "Annuler" : "Commander direct"}
+                <Button size="lg" variant="outline" className="border-[#25D366] text-[#1da851] hover:bg-[#25D366]/10 gap-2 h-11" asChild>
+                  <a href={`https://wa.me/?text=Bonjour, je suis intéressé par ${encodeURIComponent(product.name)} à ${formatFCFA(product.price)}`} target="_blank" rel="noopener noreferrer">
+                    <MessageCircle className="w-4 h-4" /> WhatsApp
+                  </a>
                 </Button>
               </div>
 
-              {/* Bouton WhatsApp (optionnel) */}
-              {!showOrderForm && (
-                <Button size="lg" variant="outline" className="border-[#25D366] text-[#1da851] hover:bg-[#25D366]/10 gap-2 h-12 w-full" asChild>
-                  <a href={`https://wa.me/?text=Bonjour, je suis intéressé par ${encodeURIComponent(product.name)} à ${formatFCFA(product.price)}`} target="_blank" rel="noopener noreferrer">
-                    <MessageCircle className="w-4 h-4" /> Commander sur WhatsApp
-                  </a>
-                </Button>
-              )}
-
-              {/* Formulaire de commande direct (inline) */}
-              {showOrderForm && inStock && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <OrderForm
-                    items={[{
-                      productId: product.id,
-                      name: product.name,
-                      price: product.price,
-                      quantity,
-                    }]}
-                    userId={product.user_id}
-                    slug={slug}
-                    title="Commande express"
-                    promoCode={appliedPromo}
-                    promoDiscount={(() => {
-                      try {
-                        const p = promoCodes.find((p) => p.code === appliedPromo);
-                        return p && p.type === "percentage" ? p.value : 0;
-                      } catch { return 0; }
-                    })()}
-                  />
-                </motion.div>
+              {/* Formulaire de commande direct — TOUJOURS VISIBLE */}
+              {inStock && (
+                <OrderForm
+                  items={[{
+                    productId: product.id,
+                    name: product.name,
+                    price: product.price,
+                    quantity,
+                  }]}
+                  userId={product.user_id}
+                  slug={slug}
+                  title="Commander maintenant"
+                  bundles={bundles.map((b) => ({
+                    id: b.id,
+                    name: b.name,
+                    bundle_price: b.bundle_price,
+                    original_price: b.original_price,
+                    products: Array.isArray(b.products) ? b.products : [],
+                  }))}
+                  promoCode={appliedPromo}
+                  promoDiscount={(() => {
+                    try {
+                      const p = promoCodes.find((p) => p.code === appliedPromo);
+                      return p && p.type === "percentage" ? p.value : 0;
+                    } catch { return 0; }
+                  })()}
+                />
               )}
 
               {/* COD badge */}

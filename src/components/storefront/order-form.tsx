@@ -14,6 +14,7 @@ import {
   CreditCard,
   ShoppingCart,
   X,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,14 @@ const formatFCFA = (n: number) => n.toLocaleString("fr-FR") + " FCFA";
 const PAYMENT_METHODS = [
   { id: "cod", label: "Paiement à la livraison", desc: "Cash à réception du colis", icon: "COD", color: "bg-yaa-green-500" },
 ];
+
+type BundleOption = {
+  id: string;
+  name: string;
+  bundle_price: number;
+  original_price: number;
+  products: { id?: string; name: string; price: number }[];
+};
 
 type OrderFormProps = {
   /** Produits à commander — peut être un seul produit ou les items d'un bundle */
@@ -52,6 +61,8 @@ type OrderFormProps = {
   promoCode?: string | null;
   /** Réduction en % (optionnel) */
   promoDiscount?: number;
+  /** Bundles disponibles pour sélection (optionnel) */
+  bundles?: BundleOption[];
   /** Callback quand la commande est créée */
   onSuccess?: (orderId: string) => void;
   /** Classe CSS supplémentaire */
@@ -59,19 +70,22 @@ type OrderFormProps = {
 };
 
 export function OrderForm({
-  items,
+  items: initialItems,
   userId,
   slug,
   title = "Commander maintenant",
-  fixedTotal,
+  fixedTotal: initialFixedTotal,
   promoCode,
   promoDiscount = 0,
+  bundles = [],
   onSuccess,
   className,
 }: OrderFormProps) {
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
   const [paymentMethod, setPaymentMethod] = React.useState("cod");
+  // Selected option: "single" for product only, or bundle ID
+  const [selectedOption, setSelectedOption] = React.useState<string>("single");
   const [customer, setCustomer] = React.useState({
     name: "",
     phone: "",
@@ -82,11 +96,35 @@ export function OrderForm({
     notes: "",
   });
 
+  // Compute current items + total based on selection
+  const { items, fixedTotal } = React.useMemo(() => {
+    if (selectedOption !== "single") {
+      const bundle = bundles.find((b) => b.id === selectedOption);
+      if (bundle) {
+        return {
+          items: bundle.products.map((p) => ({
+            productId: p.id || `bundle-${bundle.id}-${p.name}`,
+            name: p.name,
+            price: p.price,
+            quantity: 1,
+          })),
+          fixedTotal: bundle.bundle_price,
+        };
+      }
+    }
+    return { items: initialItems, fixedTotal: initialFixedTotal };
+  }, [selectedOption, bundles, initialItems, initialFixedTotal]);
+
   // Calculer le total
   const subtotal = fixedTotal ?? items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const discount = Math.round((subtotal * promoDiscount) / 100);
-  const shipping = 2500; // frais de livraison par défaut (Yango)
-  const total = subtotal - discount + shipping;
+  // Livraison gratuite à partir de 50 000 FCFA, sinon 2500 FCFA
+  const FREE_SHIPPING_THRESHOLD = 50000;
+  const SHIPPING_FEE = 2500;
+  const afterDiscount = subtotal - discount;
+  const isFreeShipping = afterDiscount >= FREE_SHIPPING_THRESHOLD;
+  const shipping = isFreeShipping ? 0 : SHIPPING_FEE;
+  const total = afterDiscount + shipping;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,6 +207,85 @@ export function OrderForm({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Sélecteur de packs (si bundles disponibles) */}
+        {bundles.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-yaa-orange-500" /> Choisissez votre pack
+            </p>
+            <div className="space-y-1.5">
+              {/* Option: produit seul */}
+              <button
+                type="button"
+                onClick={() => setSelectedOption("single")}
+                className={cn(
+                  "w-full flex items-center gap-2 p-2.5 rounded-lg border-2 transition-colors text-left",
+                  selectedOption === "single"
+                    ? "border-yaa-green-500 bg-yaa-green-50/50 dark:bg-yaa-green-950/20"
+                    : "border-slate-200 hover:border-yaa-green-300"
+                )}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold">Produit seul</p>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {initialItems.map((i) => i.name).join(", ")}
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-yaa-green-600">
+                  {formatFCFA(initialItems.reduce((s, i) => s + i.price * i.quantity, 0))}
+                </span>
+                {selectedOption === "single" && <Check className="w-4 h-4 text-yaa-green-500 flex-shrink-0" />}
+              </button>
+              {/* Options: bundles */}
+              {bundles.map((bundle) => {
+                const savings = bundle.original_price - bundle.bundle_price;
+                const discountPercent = bundle.original_price > 0
+                  ? Math.round((savings / bundle.original_price) * 100)
+                  : 0;
+                return (
+                  <button
+                    key={bundle.id}
+                    type="button"
+                    onClick={() => setSelectedOption(bundle.id)}
+                    className={cn(
+                      "w-full flex items-start gap-2 p-2.5 rounded-lg border-2 transition-colors text-left",
+                      selectedOption === bundle.id
+                        ? "border-yaa-orange-500 bg-yaa-orange-50/50 dark:bg-yaa-orange-950/20"
+                        : "border-slate-200 hover:border-yaa-orange-300"
+                    )}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <p className="text-xs font-semibold truncate">{bundle.name}</p>
+                        {discountPercent > 0 && (
+                          <Badge className="bg-yaa-orange-100 text-yaa-orange-700 text-[9px]">
+                            -{discountPercent}%
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {bundle.products.map((p) => p.name).join(" + ")}
+                      </p>
+                      <p className="text-[10px] text-yaa-orange-600 font-semibold mt-0.5">
+                        Économie : {formatFCFA(savings)}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs font-bold text-yaa-green-600">
+                        {formatFCFA(bundle.bundle_price)}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground line-through">
+                        {formatFCFA(bundle.original_price)}
+                      </p>
+                    </div>
+                    {selectedOption === bundle.id && <Check className="w-4 h-4 text-yaa-orange-500 flex-shrink-0 mt-1" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Récapitulatif */}
         <div className="p-3 rounded-lg bg-muted/50 border">
           <p className="text-xs font-semibold mb-2">Récapitulatif</p>
@@ -192,9 +309,18 @@ export function OrderForm({
               </div>
             )}
             <div className="flex justify-between text-muted-foreground">
-              <span>Livraison (Yango)</span>
-              <span>{formatFCFA(shipping)}</span>
+              <span>Livraison</span>
+              {isFreeShipping ? (
+                <span className="text-yaa-green-600 font-bold">GRATUITE 🎉</span>
+              ) : (
+                <span>{formatFCFA(shipping)}</span>
+              )}
             </div>
+            {!isFreeShipping && (
+              <p className="text-[10px] text-yaa-orange-600 mt-0.5">
+                💡 Plus que {formatFCFA(FREE_SHIPPING_THRESHOLD - afterDiscount)} pour la livraison gratuite
+              </p>
+            )}
             <div className="flex justify-between font-bold text-sm pt-1 border-t">
               <span>Total</span>
               <span className="text-yaa-green-600">{formatFCFA(total)}</span>
