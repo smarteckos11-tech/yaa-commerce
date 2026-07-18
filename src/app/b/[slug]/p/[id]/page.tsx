@@ -94,6 +94,42 @@ type Review = {
 
 type FAQ = { q: string; a: string };
 
+// Error Boundary to catch any rendering errors
+class ProductErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: string }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-4">
+          <h1 className="font-display font-bold text-xl mb-2">Oups !</h1>
+          <p className="text-sm text-muted-foreground mb-4">
+            Une erreur est survenue lors du chargement de ce produit.
+          </p>
+          <p className="text-xs text-muted-foreground mb-4 font-mono bg-muted p-2 rounded">
+            {this.state.error || "Erreur inconnue"}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-yaa-green-500 text-white rounded-lg text-sm font-semibold"
+          >
+            Réessayer
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const MOCK_REVIEWS: Review[] = [
   { id: "1", author: "Aminata T.", rating: 5, date: "12 Jun 2026", comment: "Produit de très bonne qualité, exactement comme sur la photo. Livraison rapide à Abidjan en 2h avec Yango !", helpful: 12 },
   { id: "2", author: "Ibrahim K.", rating: 4, date: "08 Jun 2026", comment: "Bon rapport qualité-prix. Le produit correspond à la description. Je recommande.", helpful: 5 },
@@ -110,7 +146,15 @@ const MOCK_FAQS: FAQ[] = [
 
 const formatFCFA = (n: number) => n.toLocaleString("fr-FR") + " FCFA";
 
-export default function ProductPage() {
+export default function ProductPageWrapper() {
+  return (
+    <ProductErrorBoundary>
+      <ProductPage />
+    </ProductErrorBoundary>
+  );
+}
+
+function ProductPage() {
   const params = useParams();
   const slug = params.slug as string;
   const productId = params.id as string;
@@ -173,10 +217,18 @@ export default function ProductPage() {
           .eq("status", "active");
 
         if (allBundles) {
-          // Filter bundles containing this product
+          // Filter bundles containing this product (parse JSON if needed)
           const matching = (allBundles as Bundle[]).filter((b) => {
-            const prods = Array.isArray(b.products) ? b.products : [];
-            return prods.some((p: any) => p.id === productId);
+            try {
+              let prods = b.products;
+              if (typeof prods === "string") {
+                try { prods = JSON.parse(prods); } catch { prods = []; }
+              }
+              if (!Array.isArray(prods)) return false;
+              return prods.some((p: any) => p && p.id === productId);
+            } catch {
+              return false;
+            }
           });
           setBundles(matching);
         }
@@ -300,12 +352,21 @@ export default function ProductPage() {
   // Build images array: use 'images' JSONB column if available, fallback to image_url
   const images = React.useMemo(() => {
     if (!product) return [];
-    const allImages = Array.isArray(product.images) && product.images.length > 0
-      ? product.images
-      : product.image_url
-      ? [product.image_url]
-      : [];
-    return allImages;
+    try {
+      // Handle string JSON, array, or null/undefined
+      let rawImages = product.images;
+      if (typeof rawImages === "string") {
+        try { rawImages = JSON.parse(rawImages); } catch { rawImages = []; }
+      }
+      const allImages = Array.isArray(rawImages) && rawImages.length > 0
+        ? rawImages
+        : product.image_url
+        ? [product.image_url]
+        : [];
+      return allImages;
+    } catch {
+      return product.image_url ? [product.image_url] : [];
+    }
   }, [product]);
   const inStock = product.type === "digital" || product.stock === null || (product.stock ?? 0) > 0;
   const avgRating = 4.8;
@@ -560,7 +621,12 @@ export default function ProductPage() {
                     slug={slug}
                     title="Commande express"
                     promoCode={appliedPromo}
-                    promoDiscount={promoCodes.find((p) => p.code === appliedPromo)?.type === "percentage" ? promoCodes.find((p) => p.code === appliedPromo)!.value : 0}
+                    promoDiscount={(() => {
+                      try {
+                        const p = promoCodes.find((p) => p.code === appliedPromo);
+                        return p && p.type === "percentage" ? p.value : 0;
+                      } catch { return 0; }
+                    })()}
                   />
                 </motion.div>
               )}
