@@ -39,12 +39,19 @@ const SHIPPING_METHODS = [
   { id: "pickup", label: "Retrait en boutique", desc: "Gratuit, disponible sous 2h", price: 0, icon: "🏪" },
 ];
 
+// Paiements actifs — pour réactiver Wave/Orange/MTN, ajoute-les ici
+// après intégration CinetPay (https://cinetpay.com)
 const PAYMENT_METHODS = [
-  { id: "wave", label: "Wave", desc: "Paiement instantané", icon: "W", color: "bg-sky-500" },
-  { id: "orange_money", label: "Orange Money", desc: "Paiement Mobile Money", icon: "OM", color: "bg-orange-500" },
-  { id: "mtn_momo", label: "MTN MoMo", desc: "Paiement Mobile Money", icon: "MTN", color: "bg-yellow-400 text-slate-900" },
-  { id: "cod", label: "Paiement à la livraison", desc: "Payez en cash à réception", icon: "COD", color: "bg-yaa-green-500" },
+  { id: "cod", label: "Paiement à la livraison", desc: "Payez en cash à réception du colis", icon: "COD", color: "bg-yaa-green-500" },
 ];
+
+// Paiements en ligne (bientôt disponibles via CinetPay)
+// Pour réactiver, décommente ces lignes et configure CinetPay :
+// const ONLINE_PAYMENT_METHODS = [
+//   { id: "wave", label: "Wave", desc: "Paiement instantané", icon: "W", color: "bg-sky-500" },
+//   { id: "orange_money", label: "Orange Money", desc: "Paiement Mobile Money", icon: "OM", color: "bg-orange-500" },
+//   { id: "mtn_momo", label: "MTN MoMo", desc: "Paiement Mobile Money", icon: "MTN", color: "bg-yellow-400 text-slate-900" },
+// ];
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -58,7 +65,7 @@ export default function CheckoutPage() {
   const [step, setStep] = React.useState<1 | 2 | 3>(1);
   const [loading, setLoading] = React.useState(false);
   const [shippingMethod, setShippingMethod] = React.useState("yango");
-  const [paymentMethod, setPaymentMethod] = React.useState("wave");
+  const [paymentMethod, setPaymentMethod] = React.useState("cod");
 
   // Customer info
   const [customer, setCustomer] = React.useState({
@@ -102,7 +109,7 @@ export default function CheckoutPage() {
           variant: i.variant,
         }))),
         amount: total,
-        payment_method: PAYMENT_METHODS.find((p) => p.id === paymentMethod)?.label || "Wave",
+        payment_method: PAYMENT_METHODS.find((p) => p.id === paymentMethod)?.label || "Paiement à la livraison",
         status: "nouveau",
         cod_enabled: paymentMethod === "cod",
         cod_amount: paymentMethod === "cod" ? total : null,

@@ -26,12 +26,10 @@ import { cn } from "@/lib/utils";
 
 const formatFCFA = (n: number) => n.toLocaleString("fr-FR") + " FCFA";
 
+// Paiements actifs — pour réactiver Wave/Orange/MTN, ajoute-les ici
+// après intégration CinetPay (https://cinetpay.com)
 const PAYMENT_METHODS = [
-  { id: "wave", label: "Wave", desc: "Paiement instantané", icon: "W", color: "bg-sky-500" },
-  { id: "orange_money", label: "Orange Money", desc: "Mobile Money", icon: "OM", color: "bg-orange-500" },
-  { id: "mtn_momo", label: "MTN MoMo", desc: "Mobile Money", icon: "MTN", color: "bg-yellow-400 text-slate-900" },
-  { id: "moov", label: "Moov Money", desc: "Mobile Money", icon: "M", color: "bg-blue-600" },
-  { id: "cod", label: "Paiement à la livraison", desc: "Cash à réception", icon: "COD", color: "bg-yaa-green-500" },
+  { id: "cod", label: "Paiement à la livraison", desc: "Cash à réception du colis", icon: "COD", color: "bg-yaa-green-500" },
 ];
 
 type OrderFormProps = {
