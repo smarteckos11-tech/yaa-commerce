@@ -590,3 +590,120 @@ exception when duplicate_object then null; end $$;
 -- Permet de stocker plusieurs images par produit (galerie)
 -- L'ancienne colonne 'image_url' est conservée pour compatibilité
 alter table public.products add column if not exists images jsonb default '[]'::jsonb;
+
+-- ============================================================
+-- 27. LIVE_CHAT — conversations client ↔ marchand en temps réel
+-- ============================================================
+create table if not exists public.live_chat_conversations (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles on delete cascade not null,
+  customer_name text not null,
+  customer_email text,
+  customer_phone text,
+  customer_ip text,
+  session_id text,
+  status text default 'open' check (status in ('open', 'closed')),
+  last_message text,
+  last_message_at timestamp with time zone default now(),
+  unread_by_merchant integer default 0,
+  unread_by_customer integer default 0,
+  created_at timestamp with time zone default now()
+);
+
+create table if not exists public.live_chat_messages (
+  id uuid default gen_random_uuid() primary key,
+  conversation_id uuid references public.live_chat_conversations on delete cascade not null,
+  sender text check (sender in ('customer', 'merchant', 'bot')),
+  content text not null,
+  is_ai_suggestion boolean default false,
+  read_at timestamp with time zone,
+  created_at timestamp with time zone default now()
+);
+
+alter table public.live_chat_conversations enable row level security;
+alter table public.live_chat_messages enable row level security;
+
+-- Public can create conversations + send messages (no auth required for storefront)
+do $$ begin
+  create policy "Public can create conversations" on public.live_chat_conversations
+    for insert with check (true);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Public can read own conversations" on public.live_chat_conversations
+    for select using (true);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Public can send messages" on public.live_chat_messages
+    for insert with check (true);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Public can read messages" on public.live_chat_messages
+    for select using (true);
+exception when duplicate_object then null; end $$;
+
+-- Merchant can manage their conversations (filtered by user_id)
+do $$ begin
+  create policy "Merchant can update own conversations" on public.live_chat_conversations
+    for update using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Merchant can update messages in own convos" on public.live_chat_messages
+    for update using (
+      exists (select 1 from public.live_chat_conversations c
+              where c.id = live_chat_messages.conversation_id and c.user_id = auth.uid())
+    );
+exception when duplicate_object then null; end $$;
+
+create index if not exists idx_live_chat_conversations_user_id on public.live_chat_conversations(user_id);
+create index if not exists idx_live_chat_conversations_status on public.live_chat_conversations(status);
+create index if not exists idx_live_chat_messages_conversation_id on public.live_chat_messages(conversation_id);
+
+-- ============================================================
+-- 28. PRODUCTS — Ajout colonne video_url pour vidéos produit
+-- ============================================================
+alter table public.products add column if not exists video_url text;
+alter table public.products add column if not exists video_poster text;
+
+-- ============================================================
+-- 29. PIXEL_SETTINGS — configuration des pixels pub par boutique
+-- ============================================================
+create table if not exists public.pixel_settings (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles on delete cascade not null unique,
+  meta_pixel_id text,
+  tiktok_pixel_id text,
+  google_ads_id text,
+  snapchat_pixel_id text,
+  twitter_pixel_id text,
+  tracking_enabled boolean default true,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+alter table public.pixel_settings enable row level security;
+
+do $$ begin
+  create policy "Users can view own pixel settings" on public.pixel_settings
+    for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Users can insert own pixel settings" on public.pixel_settings
+    for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Users can update own pixel settings" on public.pixel_settings
+    for update using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Users can delete own pixel settings" on public.pixel_settings
+    for delete using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+create index if not exists idx_pixel_settings_user_id on public.pixel_settings(user_id);

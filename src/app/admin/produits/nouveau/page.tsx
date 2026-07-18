@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Sparkles, DollarSign, Tag, Box, FileText, Settings, Layers, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, DollarSign, Tag, Box, FileText, Settings, Layers, Trash2, Plus, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,7 @@ function NewProductPage() {
   const [weight, setWeight] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [images, setImages] = React.useState<{ secure_url: string; public_id: string; width: number; height: number }[]>([]);
+  const [videoUrl, setVideoUrl] = React.useState("");
   const [trackInventory, setTrackInventory] = React.useState(true);
 
   // Derived from type — true only for physical products
@@ -107,6 +108,7 @@ Retour gratuit sous 7 jours`;
         description: description || null,
         image_url: images[0]?.secure_url || null, // backwards compat
         images: images.map((img) => img.secure_url), // array of all image URLs
+        video_url: videoUrl || null,
         status: "actif",
       };
 
@@ -183,6 +185,7 @@ Retour gratuit sous 7 jours`;
           if (allImages.length > 0) {
             setImages(allImages.map((url: string) => ({ secure_url: url, public_id: "", width: 0, height: 0 })));
           }
+          if (data.video_url) setVideoUrl(data.video_url);
           if (data.stock === null) setTrackInventory(false);
         }
       } catch (err) {
@@ -295,6 +298,36 @@ Retour gratuit sous 7 jours`;
                 maxImages={6}
                 label="Photos du produit (max 6)"
               />
+
+              {/* Vidéo produit (style TikTok/YouCan) */}
+              <div className="mt-4 pt-4 border-t">
+                <Label className="text-xs font-semibold flex items-center gap-1.5">
+                  <Video className="w-3.5 h-3.5 text-yaa-orange-500" /> Vidéo produit (optionnel)
+                </Label>
+                <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">
+                  Format vertical (9:16) recommandé · MP4, WebM · URL directe ou YouTube/TikTok embed
+                </p>
+                <Input
+                  placeholder="https://...video.mp4 ou https://youtube.com/shorts/xxx"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  className="mt-1"
+                />
+                {videoUrl && (
+                  <div className="mt-2 p-2 rounded-lg bg-muted/50">
+                    <p className="text-[10px] text-muted-foreground mb-1">Aperçu :</p>
+                    <div className="aspect-[9/16] max-w-[160px] rounded-lg overflow-hidden bg-black">
+                      <video
+                        src={videoUrl}
+                        controls
+                        muted
+                        className="w-full h-full object-cover"
+                        onError={() => {}}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </Card>
           </motion.div>
 

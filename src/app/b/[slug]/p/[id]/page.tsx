@@ -28,6 +28,8 @@ import {
   ArrowRight,
   Sparkles,
   Zap,
+  Play,
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -46,6 +48,7 @@ type Product = {
   price: number;
   image_url: string | null;
   images: string[] | null; // JSONB array of image URLs
+  video_url: string | null;
   category: string | null;
   stock: number | null;
   type: string;
@@ -130,6 +133,7 @@ export default function ProductPage() {
   const [showStickyBar, setShowStickyBar] = React.useState(false);
   const [showOrderForm, setShowOrderForm] = React.useState(false);
   const [showBundleOrderForm, setShowBundleOrderForm] = React.useState<string | null>(null);
+  const [showVideo, setShowVideo] = React.useState(false);
 
   const add = useCart((s) => s.add);
 
@@ -377,16 +381,62 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* Thumbnails */}
-            {images.length > 1 && (
+            {/* Thumbnails + Video thumbnail */}
+            {(images.length > 1 || product.video_url) && (
               <div className="grid grid-cols-5 gap-2">
                 {images.map((img, i) => (
-                  <button key={i} onClick={() => setSelectedImage(i)}
-                    className={cn("aspect-square rounded-lg overflow-hidden border-2 transition-colors", selectedImage === i ? "border-yaa-green-500" : "border-transparent")}>
+                  <button key={i} onClick={() => { setSelectedImage(i); setShowVideo(false); }}
+                    className={cn("aspect-square rounded-lg overflow-hidden border-2 transition-colors relative", !showVideo && selectedImage === i ? "border-yaa-green-500" : "border-transparent")}>
                     <img src={img} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
+                {product.video_url && (
+                  <button
+                    onClick={() => setShowVideo(true)}
+                    className={cn(
+                      "aspect-square rounded-lg overflow-hidden border-2 transition-colors relative bg-black flex items-center justify-center",
+                      showVideo ? "border-yaa-orange-500" : "border-transparent"
+                    )}
+                  >
+                    {images[0] && (
+                      <img src={images[0]} alt="" className="w-full h-full object-cover opacity-50" />
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-yaa-orange-500 flex items-center justify-center">
+                        <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                      </div>
+                    </div>
+                  </button>
+                )}
               </div>
+            )}
+
+            {/* Video player (vertical TikTok-style) */}
+            {showVideo && product.video_url && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="aspect-[9/16] max-w-[400px] mx-auto rounded-2xl overflow-hidden bg-black relative"
+              >
+                <video
+                  src={product.video_url}
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={() => setShowVideo(false)}
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center z-10"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="absolute bottom-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded">
+                  🎬 Vidéo du produit
+                </div>
+              </motion.div>
             )}
 
             {/* Trust badges under image */}

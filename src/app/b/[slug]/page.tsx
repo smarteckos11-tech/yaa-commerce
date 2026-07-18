@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase-client";
 import { useCart } from "@/lib/cart-store";
+import { LiveChatWidget } from "@/components/storefront/live-chat/live-chat-widget";
+import { PixelTracker } from "@/components/storefront/pixels/pixel-tracker";
 import { cn } from "@/lib/utils";
 
 type Product = {
@@ -27,6 +29,13 @@ type Product = {
 type Profile = {
   boutique_name: string;
   plan: string;
+  user_id?: string;
+};
+
+type ProfileWithId = {
+  id: string;
+  boutique_name: string;
+  plan: string;
 };
 
 const formatFCFA = (n: number) => n.toLocaleString("fr-FR") + " FCFA";
@@ -38,6 +47,7 @@ export default function StorefrontPage() {
 
   const [products, setProducts] = React.useState<Product[]>([]);
   const [profile, setProfile] = React.useState<Profile | null>(null);
+  const [boutiqueUserId, setBoutiqueUserId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
   const [category, setCategory] = React.useState("all");
@@ -57,13 +67,15 @@ export default function StorefrontPage() {
           return;
         }
 
-        const p = profiles[0] as Profile;
+        const p = profiles[0] as ProfileWithId;
         setProfile(p);
+        setBoutiqueUserId(p.id);
 
         // Get products for this boutique
         const { data: prods } = await supabase
           .from("products")
           .select("*")
+          .eq("user_id", p.id)
           .eq("status", "actif")
           .order("created_at", { ascending: false });
 
@@ -85,7 +97,7 @@ export default function StorefrontPage() {
     return list;
   }, [products, search, category, sort]);
 
-  const categories = ["all", ...Array.from(new Set(products.map((p) => p.category).filter(Boolean)))];
+  const categories = ["all", ...Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[]];
 
   const handleAddToCart = (product: Product) => {
     add({
@@ -245,6 +257,14 @@ export default function StorefrontPage() {
           </p>
         </div>
       </footer>
+
+      {/* Live Chat Widget + Pixel Tracker */}
+      {boutiqueUserId && (
+        <>
+          <LiveChatWidget userId={boutiqueUserId} />
+          <PixelTracker userId={boutiqueUserId} />
+        </>
+      )}
     </div>
   );
 }

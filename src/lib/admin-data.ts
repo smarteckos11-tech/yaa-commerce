@@ -34,8 +34,10 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Clients", href: "/admin/clients", icon: "Users" },
       { label: "Paiements", href: "/admin/paiements", icon: "CreditCard" },
       { label: "WhatsApp Commerce", href: "/admin/whatsapp", icon: "MessageCircle", badge: { text: "Nouveau", variant: "orange" } },
+      { label: "Live Chat", href: "/admin/live-chat", icon: "MessageSquare", badge: { text: "New", variant: "green" } },
       { label: "Livraisons", href: "/admin/livraisons", icon: "Truck" },
       { label: "Marketing", href: "/admin/marketing", icon: "Megaphone" },
+      { label: "Pixels pub", href: "/admin/pixels", icon: "Search", badge: { text: "New", variant: "green" } },
     ],
   },
   {
