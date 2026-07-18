@@ -328,6 +328,27 @@ function ProductPage() {
 
   const applyPromo = useCart((s) => s.applyPromo);
 
+  // Build images array: use 'images' JSONB column if available, fallback to image_url
+  // MUST be called BEFORE any conditional return (Rules of Hooks)
+  const images = React.useMemo(() => {
+    if (!product) return [];
+    try {
+      // Handle string JSON, array, or null/undefined
+      let rawImages = product.images;
+      if (typeof rawImages === "string") {
+        try { rawImages = JSON.parse(rawImages); } catch { rawImages = []; }
+      }
+      const allImages = Array.isArray(rawImages) && rawImages.length > 0
+        ? rawImages
+        : product.image_url
+        ? [product.image_url]
+        : [];
+      return allImages;
+    } catch {
+      return product.image_url ? [product.image_url] : [];
+    }
+  }, [product]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -349,25 +370,6 @@ function ProductPage() {
     );
   }
 
-  // Build images array: use 'images' JSONB column if available, fallback to image_url
-  const images = React.useMemo(() => {
-    if (!product) return [];
-    try {
-      // Handle string JSON, array, or null/undefined
-      let rawImages = product.images;
-      if (typeof rawImages === "string") {
-        try { rawImages = JSON.parse(rawImages); } catch { rawImages = []; }
-      }
-      const allImages = Array.isArray(rawImages) && rawImages.length > 0
-        ? rawImages
-        : product.image_url
-        ? [product.image_url]
-        : [];
-      return allImages;
-    } catch {
-      return product.image_url ? [product.image_url] : [];
-    }
-  }, [product]);
   const inStock = product.type === "digital" || product.stock === null || (product.stock ?? 0) > 0;
   const avgRating = 4.8;
   const reviewCount = MOCK_REVIEWS.length;
