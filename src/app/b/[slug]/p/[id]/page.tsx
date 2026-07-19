@@ -30,6 +30,7 @@ import {
   Zap,
   Play,
   Video,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -145,6 +146,106 @@ const MOCK_FAQS: FAQ[] = [
 ];
 
 const formatFCFA = (n: number) => n.toLocaleString("fr-FR") + " FCFA";
+
+// Smart video player — detects URL type and uses the right player
+function VideoPlayer({ url }: { url: string }) {
+  // Check if YouTube URL
+  const getYouTubeId = (url: string): string | null => {
+    const patterns = [
+      /youtube\.com\/watch\?v=([\w-]+)/,
+      /youtube\.com\/shorts\/([\w-]+)/,
+      /youtu\.be\/([\w-]+)/,
+    ];
+    for (const p of patterns) {
+      const m = url.match(p);
+      if (m) return m[1];
+    }
+    return null;
+  };
+
+  // Check if TikTok URL
+  const getTikTokId = (url: string): string | null => {
+    const m = url.match(/tiktok\.com\/@[\w.-]+\/video\/(\d+)/);
+    return m ? m[1] : null;
+  };
+
+  const youtubeId = getYouTubeId(url);
+  const tiktokId = getTikTokId(url);
+  const isDirectVideo = url.match(/\.(mp4|webm|ogg|mov|m4v)(\?|$)/i);
+
+  // YouTube embed
+  if (youtubeId) {
+    return (
+      <iframe
+        src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0`}
+        className="w-full h-full"
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowFullScreen
+        frameBorder="0"
+      />
+    );
+  }
+
+  // TikTok embed
+  if (tiktokId) {
+    return (
+      <iframe
+        src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
+        className="w-full h-full"
+        allow="encrypted-media;"
+        allowFullScreen
+        frameBorder="0"
+      />
+    );
+  }
+
+  // Direct video file (MP4, WebM, etc.)
+  if (isDirectVideo) {
+    return (
+      <video
+        src={url}
+        controls
+        autoPlay
+        playsInline
+        className="w-full h-full object-cover"
+      >
+        Votre navigateur ne supporte pas la lecture vidéo.
+      </video>
+    );
+  }
+
+  // Fallback: try to play as video, show link if it fails
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-4">
+      <video
+        src={url}
+        controls
+        autoPlay
+        playsInline
+        className="w-full h-full object-contain"
+        onError={(e) => {
+          // Hide the video element and show a link instead
+          (e.target as HTMLVideoElement).style.display = "none";
+          const fallback = document.getElementById("video-fallback-link");
+          if (fallback) fallback.style.display = "block";
+        }}
+      >
+        Votre navigateur ne supporte pas la lecture vidéo.
+      </video>
+      <div id="video-fallback-link" style={{ display: "none" }} className="text-center">
+        <p className="text-white text-xs mb-2">Impossible de lire la vidéo directement</p>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-yaa-green-400 text-xs underline"
+        >
+          <ExternalLink className="w-3 h-3" /> Ouvrir la vidéo
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export default function ProductPageWrapper() {
   return (
@@ -480,22 +581,14 @@ function ProductPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="aspect-[9/16] max-w-[400px] mx-auto rounded-2xl overflow-hidden bg-black relative"
               >
-                <video
-                  src={product.video_url}
-                  controls
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
+                <VideoPlayer url={product.video_url} />
                 <button
                   onClick={() => setShowVideo(false)}
                   className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center z-10"
                 >
                   <X className="w-4 h-4" />
                 </button>
-                <div className="absolute bottom-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded">
+                <div className="absolute bottom-3 left-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded z-10">
                   🎬 Vidéo du produit
                 </div>
               </motion.div>

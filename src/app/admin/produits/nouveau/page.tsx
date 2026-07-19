@@ -52,6 +52,14 @@ function NewProductPage() {
   const [videoUrl, setVideoUrl] = React.useState("");
   const [trackInventory, setTrackInventory] = React.useState(true);
 
+  // Packs (conversion optimization)
+  const [packs, setPacks] = React.useState<{ id: string; title: string; quantity: number; price: number; badge: string; badge_color: string; marketing_text: string; is_default: boolean }[]>([]);
+
+  // CTA customization
+  const [ctaText, setCtaText] = React.useState("Commander maintenant");
+  const [ctaColor, setCtaColor] = React.useState("#0F8A5F");
+  const [ctaRadius, setCtaRadius] = React.useState(12);
+
   // Derived from type — true only for physical products
   const isPhysical = type === "physique";
 
@@ -182,6 +190,45 @@ Retour gratuit sous 7 jours`;
         title: isEditing ? "Produit mis à jour !" : "Produit créé !",
         description: `${name} ${isEditing ? "modifié" : "ajouté à votre catalogue"}.`,
       });
+
+      // Save packs + settings (non-blocking, don't fail if it errors)
+      if (data?.id) {
+        try {
+          // Delete existing packs + insert new ones
+          await supabase.from("product_packs").delete().eq("product_id", data.id);
+          if (packs.length > 0) {
+            const packsToInsert = packs.filter((p) => p.title && p.price > 0).map((p, i) => ({
+              product_id: data.id,
+              user_id: user.id,
+              title: p.title,
+              quantity: p.quantity || 1,
+              price: p.price,
+              badge: p.badge || null,
+              badge_color: p.badge_color || "gray",
+              marketing_text: p.marketing_text || null,
+              is_default: p.is_default,
+              display_order: i,
+              is_active: true,
+            }));
+            if (packsToInsert.length > 0) {
+              await supabase.from("product_packs").insert(packsToInsert);
+            }
+          }
+
+          // Save CTA settings
+          await supabase.from("product_settings").upsert({
+            product_id: data.id,
+            user_id: user.id,
+            cta_text: ctaText,
+            cta_color: ctaColor,
+            cta_background: ctaColor,
+            cta_radius: ctaRadius,
+          }, { onConflict: "product_id" });
+        } catch (settingsErr) {
+          console.warn("[Product] Settings/packs save error:", settingsErr);
+        }
+      }
+
       router.push("/admin/produits");
       router.refresh();
     } catch (err) {
@@ -355,15 +402,32 @@ Retour gratuit sous 7 jours`;
                 {videoUrl && (
                   <div className="mt-2 p-2 rounded-lg bg-muted/50">
                     <p className="text-[10px] text-muted-foreground mb-1">Aperçu :</p>
-                    <div className="aspect-[9/16] max-w-[160px] rounded-lg overflow-hidden bg-black">
-                      <video
-                        src={videoUrl}
-                        controls
-                        muted
-                        className="w-full h-full object-cover"
-                        onError={() => {}}
-                      />
-                    </div>
+                    {videoUrl.match(/\.(mp4|webm|ogg|mov|m4v)(\?|$)/i) ? (
+                      <div className="aspect-[9/16] max-w-[160px] rounded-lg overflow-hidden bg-black">
+                        <video
+                          src={videoUrl}
+                          controls
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : videoUrl.match(/youtube|youtu\.be|tiktok/) ? (
+                      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 text-xs">
+                        <p className="text-blue-700 font-semibold mb-1">📹 Lien vidéo détecté</p>
+                        <p className="text-muted-foreground">
+                          {videoUrl.match(/youtube|youtu\.be/) ? "YouTube" : "TikTok"} — la vidéo sera lisible sur la fiche produit
+                        </p>
+                        <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline mt-1 inline-block">
+                          Voir la vidéo →
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 text-xs">
+                        <p className="text-amber-700 font-semibold">⚠️ Format non reconnu</p>
+                        <p className="text-muted-foreground mt-0.5">
+                          Utilisez un lien MP4/WebM direct, ou un lien YouTube/TikTok
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

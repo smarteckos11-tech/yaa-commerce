@@ -707,3 +707,141 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 create index if not exists idx_pixel_settings_user_id on public.pixel_settings(user_id);
+
+-- ============================================================
+-- 30. PRODUCT_PACKS — packs promotionnels par produit (1x, 2x, 3x...)
+-- ============================================================
+create table if not exists public.product_packs (
+  id uuid default gen_random_uuid() primary key,
+  product_id uuid references public.products on delete cascade not null,
+  user_id uuid references public.profiles on delete cascade not null,
+  title text not null,
+  quantity integer not null default 1,
+  price integer not null,
+  badge text,
+  badge_color text default 'gray',
+  marketing_text text,
+  background_color text,
+  text_color text,
+  display_order integer default 0,
+  is_default boolean default false,
+  is_active boolean default true,
+  created_at timestamp with time zone default now()
+);
+
+alter table public.product_packs enable row level security;
+
+do $$ begin create policy "Users can view own packs" on public.product_packs for select using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can insert own packs" on public.product_packs for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can update own packs" on public.product_packs for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can delete own packs" on public.product_packs for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- Public can read active packs (for storefront)
+do $$ begin create policy "Public can read active packs" on public.product_packs for select using (is_active = true); exception when duplicate_object then null; end $$;
+
+create index if not exists idx_product_packs_product_id on public.product_packs(product_id);
+create index if not exists idx_product_packs_display_order on public.product_packs(display_order);
+
+-- ============================================================
+-- 31. PRODUCT_SETTINGS — customisation CTA + formulaire par produit
+-- ============================================================
+create table if not exists public.product_settings (
+  id uuid default gen_random_uuid() primary key,
+  product_id uuid references public.products on delete cascade not null unique,
+  user_id uuid references public.profiles on delete cascade not null,
+  cta_text text default 'Commander maintenant',
+  cta_color text default '#0F8A5F',
+  cta_background text default '#0F8A5F',
+  cta_border text,
+  cta_radius integer default 12,
+  cta_size text default 'lg',
+  cta_icon text default 'ShoppingCart',
+  cta_position text default 'after_product_images',
+  cta_enabled boolean default true,
+  form_display_mode text default 'modal',
+  skip_cart boolean default true,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+alter table public.product_settings enable row level security;
+
+do $$ begin create policy "Users can view own product settings" on public.product_settings for select using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can insert own product settings" on public.product_settings for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can update own product settings" on public.product_settings for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can delete own product settings" on public.product_settings for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- Public can read settings (for storefront display)
+do $$ begin create policy "Public can read product settings" on public.product_settings for select using (true); exception when duplicate_object then null; end $$;
+
+create index if not exists idx_product_settings_product_id on public.product_settings(product_id);
+
+-- ============================================================
+-- 30. PRODUCT_PACKS — packs promotionnels par produit (1x, 2x, 3x)
+-- ============================================================
+create table if not exists public.product_packs (
+  id uuid default gen_random_uuid() primary key,
+  product_id uuid references public.products on delete cascade not null,
+  user_id uuid references public.profiles on delete cascade not null,
+  title text not null,
+  quantity integer not null default 1,
+  price integer not null,
+  original_price integer,
+  badge text,
+  badge_color text default 'gray' check (badge_color in ('gray', 'orange', 'red', 'green', 'blue')),
+  marketing_text text,
+  background_color text,
+  text_color text,
+  display_order integer default 0,
+  is_default boolean default false,
+  is_active boolean default true,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+alter table public.product_packs enable row level security;
+
+do $$ begin create policy "Users can view own product packs" on public.product_packs for select using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can insert own product packs" on public.product_packs for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can update own product packs" on public.product_packs for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can delete own product packs" on public.product_packs for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- Public can read active packs (storefront)
+do $$ begin create policy "Public can read active packs" on public.product_packs for select using (is_active = true); exception when duplicate_object then null; end $$;
+
+create index if not exists idx_product_packs_product_id on public.product_packs(product_id);
+create index if not exists idx_product_packs_display_order on public.product_packs(display_order);
+
+-- ============================================================
+-- 31. PRODUCT_SETTINGS — CTA + form config par boutique
+-- ============================================================
+create table if not exists public.product_settings (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles on delete cascade not null unique,
+  cta_text text default 'Commander maintenant',
+  cta_color text default '#ffffff',
+  cta_background text default '#0F8A5F',
+  cta_border text default '#0F8A5F',
+  cta_radius text default '12px',
+  cta_size text default 'lg' check (cta_size in ('sm', 'md', 'lg', 'xl')),
+  cta_icon text default 'ShoppingCart',
+  cta_position text default 'after_product_images' check (cta_position in ('after_product_images', 'before_price', 'after_price', 'below_description', 'sticky_bottom_mobile', 'floating_button')),
+  cta_enabled boolean default true,
+  form_display_mode text default 'modal' check (form_display_mode in ('modal', 'slide_panel', 'fullscreen')),
+  free_shipping_threshold integer default 50000,
+  skip_cart boolean default true,
+  show_default_packs boolean default true,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+alter table public.product_settings enable row level security;
+
+do $$ begin create policy "Users can view own product settings" on public.product_settings for select using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can insert own product settings" on public.product_settings for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "Users can update own product settings" on public.product_settings for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- Public can read product settings (storefront needs CTA config)
+do $$ begin create policy "Public can read product settings" on public.product_settings for select using (true); exception when duplicate_object then null; end $$;
+
+create index if not exists idx_product_settings_user_id on public.product_settings(user_id);
