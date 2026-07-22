@@ -32,6 +32,7 @@ import {
   Undo,
   Redo,
   Minus,
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -100,7 +101,7 @@ export function RichTextEditor({ value, onChange, placeholder = "Écrivez votre 
   // Sync external value changes
   React.useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value, false);
+      editor.commands.setContent(value || "", { emitUpdate: false } as any);
     }
   }, [value, editor]);
 
@@ -116,6 +117,53 @@ export function RichTextEditor({ value, onChange, placeholder = "Écrivez votre 
     if (url && editor) {
       editor.chain().focus().setImage({ src: url }).run();
     }
+  }, [editor]);
+
+  const addVideo = React.useCallback(() => {
+    const url = window.prompt(
+      "URL de la vidéo (YouTube, TikTok, ou lien MP4 direct):\n\nExemples:\n• https://youtube.com/watch?v=xxx\n• https://youtube.com/shorts/xxx\n• https://youtu.be/xxx\n• https://tiktok.com/@user/video/xxx\n• https://example.com/video.mp4"
+    );
+    if (!url || !editor) return;
+
+    // Detect video type and generate embed HTML
+    let embedHtml = "";
+
+    // YouTube
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtu\.be\/)([\w-]+)/);
+    if (ytMatch) {
+      embedHtml = `<div class="video-embed" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0;">
+        <iframe src="https://www.youtube.com/embed/${ytMatch[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+      </div>`;
+    }
+
+    // TikTok
+    const tiktokMatch = url.match(/tiktok\.com\/@[\w.-]+\/video\/(\d+)/);
+    if (tiktokMatch) {
+      embedHtml = `<div class="video-embed" style="position:relative;padding-bottom:177.78%;height:0;overflow:hidden;border-radius:12px;margin:12px 0;max-width:320px;margin-left:auto;margin-right:auto;">
+        <iframe src="https://www.tiktok.com/embed/v2/${tiktokMatch[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="encrypted-media" allowfullscreen></iframe>
+      </div>`;
+    }
+
+    // Direct video file (MP4, WebM, etc.)
+    if (url.match(/\.(mp4|webm|ogg|mov|m4v)(\?|$)/i)) {
+      embedHtml = `<div class="video-embed" style="border-radius:12px;overflow:hidden;margin:12px 0;">
+        <video controls playsinline style="width:100%;border-radius:12px;">
+          <source src="${url}" type="video/mp4">
+        </video>
+      </div>`;
+    }
+
+    if (!embedHtml) {
+      // Fallback: try as direct video
+      embedHtml = `<div class="video-embed" style="border-radius:12px;overflow:hidden;margin:12px 0;">
+        <video controls playsinline style="width:100%;border-radius:12px;">
+          <source src="${url}">
+        </video>
+      </div>`;
+    }
+
+    // Insert raw HTML into editor
+    editor.chain().focus().insertContent(embedHtml).run();
   }, [editor]);
 
   if (!editor) return null;
@@ -206,12 +254,15 @@ export function RichTextEditor({ value, onChange, placeholder = "Écrivez votre 
 
         <div className="w-px h-5 bg-slate-200 mx-1" />
 
-        {/* Link & Image */}
+        {/* Link & Image & Video */}
         <ToolbarButton onClick={addLink} isActive={editor.isActive("link")} title="Ajouter un lien">
           <LinkIcon className="w-3.5 h-3.5" />
         </ToolbarButton>
         <ToolbarButton onClick={addImage} title="Ajouter une image">
           <ImageIcon className="w-3.5 h-3.5" />
+        </ToolbarButton>
+        <ToolbarButton onClick={addVideo} title="Insérer une vidéo (YouTube, TikTok, MP4)">
+          <Video className="w-3.5 h-3.5" />
         </ToolbarButton>
 
         {/* Clear formatting */}

@@ -764,7 +764,7 @@ function ProductPage() {
 
             {/* Description */}
             {product.description && (
-              <div className="prose prose-sm max-w-none [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-foreground [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-yaa-green-500 [&_blockquote]:pl-4 [&_img]:rounded-lg [&_a]:text-yaa-green-600 [&_a]:underline" dangerouslySetInnerHTML={{ __html: product.description }} />
+              <div className="prose prose-sm max-w-none [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-foreground [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-yaa-green-500 [&_blockquote]:pl-4 [&_img]:rounded-lg [&_a]:text-yaa-green-600 [&_a]:underline [&_.video-embed]:rounded-xl [&_.video-embed]:overflow-hidden [&_.video-embed]:my-4 [&_iframe]:border-0 [&_video]:w-full [&_video]:rounded-xl" dangerouslySetInnerHTML={{ __html: product.description }} />
             )}
 
             {/* Shipping info */}
