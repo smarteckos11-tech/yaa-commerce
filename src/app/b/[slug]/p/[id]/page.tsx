@@ -671,55 +671,101 @@ function ProductPage() {
               )}
             </div>
 
-            {/* Description */}
-            {product.description && (
-              <div className="prose prose-sm max-w-none [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-foreground [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-yaa-green-500 [&_blockquote]:pl-4 [&_img]:rounded-lg [&_a]:text-yaa-green-600 [&_a]:underline" dangerouslySetInnerHTML={{ __html: product.description }} />
-            )}
-
-            {/* CTA — Commander maintenant (opens modal) */}
-            <div className="space-y-3 pt-4 border-t border-slate-200">
-              {/* CTA Button */}
-              {ctaSettings?.cta_enabled !== false && (
-                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                  <Button
-                    size="lg"
-                    disabled={!inStock}
-                    onClick={() => setShowOrderModal(true)}
-                    className="w-full h-14 text-base font-bold gap-2 shadow-lg"
-                    style={{
-                      backgroundColor: ctaSettings?.cta_background || "#0F8A5F",
-                      color: ctaSettings?.cta_color || "#ffffff",
-                      borderRadius: ctaSettings?.cta_radius || "12px",
-                      border: `2px solid ${ctaSettings?.cta_border || ctaSettings?.cta_background || "#0F8A5F"}`,
-                    }}
+            {/* CTA + Quantity selector — JUSTE SOUS LE STOCK */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className="space-y-3 py-3"
+            >
+              {/* Quantité + Commander sur une ligne */}
+              <div className="flex items-center gap-3">
+                {/* Sélecteur de quantité animé */}
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex items-center border-2 border-slate-200 rounded-xl overflow-hidden flex-shrink-0"
+                >
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-11 h-12 flex items-center justify-center hover:bg-muted transition-colors"
+                    aria-label="Diminuer"
                   >
-                    <Zap className="w-5 h-5" />
-                    {ctaSettings?.cta_text || "Commander maintenant"}
-                  </Button>
+                    <Minus className="w-4 h-4" />
+                  </motion.button>
+                  <motion.span
+                    key={quantity}
+                    initial={{ scale: 1.3 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                    className="w-14 text-center font-bold text-lg"
+                  >
+                    {quantity}
+                  </motion.span>
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-11 h-12 flex items-center justify-center hover:bg-muted transition-colors"
+                    aria-label="Augmenter"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </motion.button>
                 </motion.div>
-              )}
 
-              {/* Secondary buttons */}
+                {/* Bouton Commander — prend le reste de la largeur */}
+                {ctaSettings?.cta_enabled !== false && (
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex-1"
+                  >
+                    <Button
+                      size="lg"
+                      disabled={!inStock}
+                      onClick={() => setShowOrderModal(true)}
+                      className="w-full h-12 text-base font-bold gap-2 shadow-lg"
+                      style={{
+                        backgroundColor: ctaSettings?.cta_background || "#0F8A5F",
+                        color: ctaSettings?.cta_color || "#ffffff",
+                        borderRadius: ctaSettings?.cta_radius || "12px",
+                        border: `2px solid ${ctaSettings?.cta_border || ctaSettings?.cta_background || "#0F8A5F"}`,
+                      }}
+                    >
+                      <Zap className="w-5 h-5" />
+                      {ctaSettings?.cta_text || "Commander maintenant"}
+                    </Button>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Boutons secondaires */}
               <div className="grid grid-cols-2 gap-2">
-                <Button disabled={!inStock} onClick={handleAddToCart} variant="outline" className="gap-2 h-10">
-                  <ShoppingCart className="w-4 h-4" />
+                <Button disabled={!inStock} onClick={handleAddToCart} variant="outline" className="gap-2 h-9 text-sm">
+                  <ShoppingCart className="w-3.5 h-3.5" />
                   {justAdded ? "✓ Ajouté !" : "Panier"}
                 </Button>
-                <Button variant="outline" className="border-[#25D366] text-[#1da851] hover:bg-[#25D366]/10 gap-2 h-10" asChild>
+                <Button variant="outline" className="border-[#25D366] text-[#1da851] hover:bg-[#25D366]/10 gap-2 h-9 text-sm" asChild>
                   <a href={`https://wa.me/?text=Bonjour, je suis intéressé par ${encodeURIComponent(product.name)} à ${formatFCFA(product.price)}`} target="_blank" rel="noopener noreferrer">
-                    <MessageCircle className="w-4 h-4" /> WhatsApp
+                    <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
                   </a>
                 </Button>
               </div>
 
               {/* COD badge */}
-              <div className="p-3 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200 flex items-center gap-2">
+              <div className="p-2.5 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200 flex items-center gap-2">
                 <Package className="w-4 h-4 text-yaa-green-600 flex-shrink-0" />
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-yaa-green-700">Paiement à la livraison</span> — Payez en cash à réception. Disponible partout en Afrique.
+                <p className="text-[11px] text-muted-foreground">
+                  <span className="font-semibold text-yaa-green-700">Paiement à la livraison</span> — Cash à réception. Disponible partout en Afrique.
                 </p>
               </div>
-            </div>
+            </motion.div>
+
+            {/* Description */}
+            {product.description && (
+              <div className="prose prose-sm max-w-none [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-foreground [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-yaa-green-500 [&_blockquote]:pl-4 [&_img]:rounded-lg [&_a]:text-yaa-green-600 [&_a]:underline" dangerouslySetInnerHTML={{ __html: product.description }} />
+            )}
 
             {/* Shipping info */}
             <div className="p-4 rounded-xl bg-white border border-slate-100 space-y-2">
