@@ -28,6 +28,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Tableau de Bord", href: "/admin", icon: "LayoutDashboard" },
       { label: "Mes Boutiques", href: "/admin/stores", icon: "Store" },
       { label: "Produits", href: "/admin/produits", icon: "Package" },
+      { label: "Fiche produit", href: "/admin/produit-settings", icon: "Settings", badge: { text: "New", variant: "green" } },
       { label: "Avis clients", href: "/admin/reviews", icon: "Star" },
       { label: "Commandes", href: "/admin/commandes", icon: "ShoppingCart" },
       { label: "Retours & Remb.", href: "/admin/retours", icon: "RotateCcw" },

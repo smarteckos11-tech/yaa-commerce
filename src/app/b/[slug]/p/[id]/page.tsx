@@ -40,6 +40,7 @@ import { supabase } from "@/lib/supabase-client";
 import { useCart } from "@/lib/cart-store";
 import { ProductReviews } from "@/components/storefront/product-reviews";
 import { OrderForm } from "@/components/storefront/order-form";
+import { OrderModal, type ProductPack } from "@/components/storefront/order-modal";
 import { cn } from "@/lib/utils";
 
 type Product = {
@@ -278,6 +279,9 @@ function ProductPage() {
   const [showStickyBar, setShowStickyBar] = React.useState(false);
   const [showBundleOrderForm, setShowBundleOrderForm] = React.useState<string | null>(null);
   const [showVideo, setShowVideo] = React.useState(false);
+  const [showOrderModal, setShowOrderModal] = React.useState(false);
+  const [productPacks, setProductPacks] = React.useState<ProductPack[]>([]);
+  const [ctaSettings, setCtaSettings] = React.useState<any>(null);
 
   const add = useCart((s) => s.add);
 
@@ -350,6 +354,24 @@ function ProductPage() {
           });
           setPromoCodes(valid);
         }
+
+        // Load product packs (promotional packs: 1x, 2x, 3x)
+        try {
+          const packsRes = await fetch(`/api/product-packs?productId=${productId}`);
+          const packsData = await packsRes.json();
+          if (packsData.packs) {
+            setProductPacks(packsData.packs);
+          }
+        } catch {}
+
+        // Load CTA + form settings for this boutique
+        try {
+          const settingsRes = await fetch(`/api/product-settings?userId=${prod.user_id}`);
+          const settingsData = await settingsRes.json();
+          if (settingsData.settings) {
+            setCtaSettings(settingsData.settings);
+          }
+        } catch {}
       } finally {
         setLoading(false);
       }
@@ -654,58 +676,41 @@ function ProductPage() {
               <div className="prose prose-sm max-w-none [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-foreground [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-yaa-green-500 [&_blockquote]:pl-4 [&_img]:rounded-lg [&_a]:text-yaa-green-600 [&_a]:underline" dangerouslySetInnerHTML={{ __html: product.description }} />
             )}
 
-            {/* Quantity + Add to cart */}
+            {/* CTA — Commander maintenant (opens modal) */}
             <div className="space-y-3 pt-4 border-t border-slate-200">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold">Quantité :</span>
-                <div className="flex items-center border border-slate-200 rounded-lg">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-9 h-9 flex items-center justify-center hover:bg-muted" aria-label="Diminuer"><Minus className="w-3 h-3" /></button>
-                  <span className="w-12 text-center font-semibold">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} className="w-9 h-9 flex items-center justify-center hover:bg-muted" aria-label="Augmenter"><Plus className="w-3 h-3" /></button>
-                </div>
-              </div>
+              {/* CTA Button */}
+              {ctaSettings?.cta_enabled !== false && (
+                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                  <Button
+                    size="lg"
+                    disabled={!inStock}
+                    onClick={() => setShowOrderModal(true)}
+                    className="w-full h-14 text-base font-bold gap-2 shadow-lg"
+                    style={{
+                      backgroundColor: ctaSettings?.cta_background || "#0F8A5F",
+                      color: ctaSettings?.cta_color || "#ffffff",
+                      borderRadius: ctaSettings?.cta_radius || "12px",
+                      border: `2px solid ${ctaSettings?.cta_border || ctaSettings?.cta_background || "#0F8A5F"}`,
+                    }}
+                  >
+                    <Zap className="w-5 h-5" />
+                    {ctaSettings?.cta_text || "Commander maintenant"}
+                  </Button>
+                </motion.div>
+              )}
 
-              {/* Boutons secondaires */}
+              {/* Secondary buttons */}
               <div className="grid grid-cols-2 gap-2">
-                <Button size="lg" disabled={!inStock} onClick={handleAddToCart} variant="outline" className="gap-2 h-11">
+                <Button disabled={!inStock} onClick={handleAddToCart} variant="outline" className="gap-2 h-10">
                   <ShoppingCart className="w-4 h-4" />
-                  {justAdded ? "✓ Ajouté !" : "Ajouter au panier"}
+                  {justAdded ? "✓ Ajouté !" : "Panier"}
                 </Button>
-                <Button size="lg" variant="outline" className="border-[#25D366] text-[#1da851] hover:bg-[#25D366]/10 gap-2 h-11" asChild>
+                <Button variant="outline" className="border-[#25D366] text-[#1da851] hover:bg-[#25D366]/10 gap-2 h-10" asChild>
                   <a href={`https://wa.me/?text=Bonjour, je suis intéressé par ${encodeURIComponent(product.name)} à ${formatFCFA(product.price)}`} target="_blank" rel="noopener noreferrer">
                     <MessageCircle className="w-4 h-4" /> WhatsApp
                   </a>
                 </Button>
               </div>
-
-              {/* Formulaire de commande direct — TOUJOURS VISIBLE */}
-              {inStock && (
-                <OrderForm
-                  items={[{
-                    productId: product.id,
-                    name: product.name,
-                    price: product.price,
-                    quantity,
-                  }]}
-                  userId={product.user_id}
-                  slug={slug}
-                  title="Commander maintenant"
-                  bundles={bundles.map((b) => ({
-                    id: b.id,
-                    name: b.name,
-                    bundle_price: b.bundle_price,
-                    original_price: b.original_price,
-                    products: Array.isArray(b.products) ? b.products : [],
-                  }))}
-                  promoCode={appliedPromo}
-                  promoDiscount={(() => {
-                    try {
-                      const p = promoCodes.find((p) => p.code === appliedPromo);
-                      return p && p.type === "percentage" ? p.value : 0;
-                    } catch { return 0; }
-                  })()}
-                />
-              )}
 
               {/* COD badge */}
               <div className="p-3 rounded-lg bg-yaa-green-50 dark:bg-yaa-green-950/30 border border-yaa-green-200 flex items-center gap-2">
@@ -1034,6 +1039,27 @@ function ProductPage() {
           <p className="text-xs text-muted-foreground">Propulsé par <Link href="/" className="font-semibold text-yaa-green-600 hover:underline">YAA Commerce</Link></p>
         </div>
       </footer>
+
+      {/* Order Modal (COD quick order with packs) */}
+      <OrderModal
+        open={showOrderModal}
+        onClose={() => setShowOrderModal(false)}
+        product={{
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image_url: images[0] || product.image_url,
+          user_id: product.user_id,
+        }}
+        slug={slug}
+        packs={productPacks}
+        ctaText={ctaSettings?.cta_text || "Commander maintenant"}
+        ctaBackground={ctaSettings?.cta_background || "#0F8A5F"}
+        ctaColor={ctaSettings?.cta_color || "#ffffff"}
+        ctaRadius={ctaSettings?.cta_radius || "12px"}
+        freeShippingThreshold={ctaSettings?.free_shipping_threshold || 50000}
+        displayMode={ctaSettings?.form_display_mode || "modal"}
+      />
     </div>
   );
 }
