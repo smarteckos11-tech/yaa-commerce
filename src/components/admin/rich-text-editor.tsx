@@ -33,8 +33,10 @@ import {
   Redo,
   Minus,
   Video,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase-client";
 import { cn } from "@/lib/utils";
 
 type RichTextEditorProps = {
@@ -112,10 +114,55 @@ export function RichTextEditor({ value, onChange, placeholder = "Écrivez votre 
     }
   }, [editor]);
 
-  const addImage = React.useCallback(() => {
-    const url = window.prompt("URL de l'image:");
-    if (url && editor) {
-      editor.chain().focus().setImage({ src: url }).run();
+  const [uploadingImage, setUploadingImage] = React.useState(false);
+  const imageInputRef = React.useRef<HTMLInputElement>(null);
+
+  const addImage = React.useCallback(async () => {
+    // Trigger file input click
+    imageInputRef.current?.click();
+  }, []);
+
+  const handleImageUpload = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor) return;
+
+    // Validate
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image trop lourde (max 5MB)");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Upload to Supabase Storage
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const filename = `desc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
+      const path = `products/${filename}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("yaa-products")
+        .upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("yaa-products")
+        .getPublicUrl(path);
+
+      // Insert image into editor at cursor position
+      editor.chain().focus().setImage({ src: urlData.publicUrl, alt: file.name }).run();
+    } catch (err) {
+      console.error("[RichTextEditor] Image upload error:", err);
+      alert(err instanceof Error ? err.message : "Erreur d'upload d'image");
+    } finally {
+      setUploadingImage(false);
+      if (imageInputRef.current) imageInputRef.current.value = "";
     }
   }, [editor]);
 
@@ -258,9 +305,16 @@ export function RichTextEditor({ value, onChange, placeholder = "Écrivez votre 
         <ToolbarButton onClick={addLink} isActive={editor.isActive("link")} title="Ajouter un lien">
           <LinkIcon className="w-3.5 h-3.5" />
         </ToolbarButton>
-        <ToolbarButton onClick={addImage} title="Ajouter une image">
-          <ImageIcon className="w-3.5 h-3.5" />
+        <ToolbarButton onClick={addImage} title="Uploader une image">
+          {uploadingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
         </ToolbarButton>
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageUpload}
+        />
         <ToolbarButton onClick={addVideo} title="Insérer une vidéo (YouTube, TikTok, MP4)">
           <Video className="w-3.5 h-3.5" />
         </ToolbarButton>
