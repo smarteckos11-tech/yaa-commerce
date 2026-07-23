@@ -1047,33 +1047,62 @@ function ProductPage() {
         <RecentlyViewed slug={slug} />
       </main>
 
-      {/* === STICKY ADD TO CART BAR === */}
+      {/* === STICKY COMMANDER BAR (bottom) === */}
       <AnimatePresence>
         {showStickyBar && product && (
           <motion.div
-            initial={{ y: 80 }}
+            initial={{ y: 100 }}
             animate={{ y: 0 }}
-            exit={{ y: 80 }}
+            exit={{ y: 100 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 shadow-lg"
+            className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 shadow-2xl"
           >
-            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden flex-shrink-0 hidden sm:block">
-                {images[0] ? <img src={images[0]} alt="" className="w-full h-full object-cover" /> : <Store className="w-5 h-5 text-muted-foreground/30 m-auto mt-2.5" />}
+            <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center gap-2.5">
+              {/* Product image + name (hidden on mobile) */}
+              <div className="w-9 h-9 rounded-lg bg-muted overflow-hidden flex-shrink-0 hidden sm:block">
+                {images[0] ? <img src={images[0]} alt="" className="w-full h-full object-cover" /> : <Store className="w-4 h-4 text-muted-foreground/30 m-auto mt-2.5" />}
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 hidden sm:block">
                 <p className="text-xs font-semibold truncate">{product.name}</p>
-                <p className="text-sm font-bold text-yaa-green-600">{formatFCFA(product.price)}</p>
+                <p className="text-sm font-bold text-yaa-green-600">{formatFCFA(product.price * quantity)}</p>
               </div>
-              <div className="flex items-center border border-slate-200 rounded-lg flex-shrink-0">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-8 h-8 flex items-center justify-center"><Minus className="w-3 h-3" /></button>
-                <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="w-8 h-8 flex items-center justify-center"><Plus className="w-3 h-3" /></button>
+
+              {/* Quantity selector */}
+              <div className="flex items-center border-2 border-slate-200 rounded-xl overflow-hidden flex-shrink-0">
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-9 h-10 flex items-center justify-center hover:bg-muted transition-colors">
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="w-10 text-center text-sm font-bold">{quantity}</span>
+                <button onClick={() => setQuantity(quantity + 1)} className="w-9 h-10 flex items-center justify-center hover:bg-muted transition-colors">
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <Button onClick={handleAddToCart} disabled={!inStock} className="bg-yaa-green-500 hover:bg-yaa-green-600 gap-1.5 flex-shrink-0">
-                <ShoppingCart className="w-4 h-4" />
-                <span className="hidden sm:inline">{justAdded ? "✓ Ajouté" : "Ajouter"}</span>
-              </Button>
+
+              {/* Commander button — animated */}
+              <motion.button
+                animate={{
+                  scale: [1, 1.03, 1],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowOrderModal(true)}
+                disabled={!inStock}
+                className="flex-shrink-0 h-10 px-5 font-bold text-sm gap-1.5 flex items-center justify-center shadow-lg text-white"
+                style={{
+                  backgroundColor: ctaSettings?.cta_background || "#0F8A5F",
+                  color: ctaSettings?.cta_color || "#ffffff",
+                  borderRadius: ctaSettings?.cta_radius || "12px",
+                  border: `2px solid ${ctaSettings?.cta_border || ctaSettings?.cta_background || "#0F8A5F"}`,
+                }}
+              >
+                <Zap className="w-4 h-4" />
+                <span className="hidden xs:inline">{ctaSettings?.cta_text || "Commander"}</span>
+                <span className="xs:hidden">Commander</span>
+              </motion.button>
             </div>
           </motion.div>
         )}
